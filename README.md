@@ -32,6 +32,29 @@ uv sync
 pip install -e .
 ```
 
+### Spotify Setup (Required for Spotify URLs)
+
+To use Spotify track downloading, you need Spotify API credentials:
+
+1. **Get Spotify Credentials**:
+   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   - Create a new app
+   - Copy your `Client ID` and `Client Secret`
+
+2. **Set Environment Variables**:
+   ```bash
+   export SPOTIFY_CLIENT_ID="your_client_id_here"
+   export SPOTIFY_CLIENT_SECRET="your_client_secret_here"
+   ```
+
+   Or create a `.env` file:
+   ```bash
+   SPOTIFY_CLIENT_ID=your_client_id_here
+   SPOTIFY_CLIENT_SECRET=your_client_secret_here
+   ```
+
+📖 **Detailed setup instructions**: See [SETUP.md](SETUP.md) for complete setup guide.
+
 ### Basic Usage
 
 ```bash

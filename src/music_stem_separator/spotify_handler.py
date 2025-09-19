@@ -29,6 +29,17 @@ class SpotifyHandler:
         self.output_format = output_format
         self.quality = quality
 
+        # Get Spotify credentials from environment variables
+        self.client_id = os.getenv("SPOTIFY_CLIENT_ID")
+        self.client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+        
+        if not self.client_id or not self.client_secret:
+            raise ValueError(
+                "Spotify credentials not found. Please set SPOTIFY_CLIENT_ID and "
+                "SPOTIFY_CLIENT_SECRET environment variables. "
+                "Get them from https://developer.spotify.com/dashboard"
+            )
+
         # Store settings for spotdl initialization
         self.settings = {
             "output_format": output_format,
@@ -108,8 +119,11 @@ class SpotifyHandler:
 
             logger.info(f"Downloading Spotify track: {track_id}")
 
-            # Initialize spotdl
-            spotdl = Spotdl()
+            # Initialize spotdl with credentials
+            spotdl = Spotdl(
+                client_id=self.client_id,
+                client_secret=self.client_secret
+            )
 
             # Download the track
             songs = spotdl.search([spotify_url])
@@ -117,7 +131,7 @@ class SpotifyHandler:
                 raise Exception("No songs found for the given URL")
 
             song = songs[0]
-            downloaded_file = spotdl.download(song, str(output_dir))
+            song, downloaded_file = spotdl.download(song)
 
             if not downloaded_file or not os.path.exists(downloaded_file):
                 raise Exception(f"Download failed or file not found: {downloaded_file}")
