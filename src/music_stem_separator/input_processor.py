@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .spotify_handler import SpotifyHandler
+from .url_downloader import URLDownloader
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ class InputProcessor:
     def __init__(self):
         """Initialize the input processor."""
         self.spotify_handler = None  # Lazy initialization
+        self.url_downloader = None  # Lazy initialization
         logger.info("Initialized InputProcessor")
 
     def determine_input_type(self, input_path: str) -> str:
@@ -30,7 +32,7 @@ class InputProcessor:
             input_path: Input string to analyze
 
         Returns:
-            Input type: 'local_file', 'spotify_url', or 'invalid'
+            Input type: 'local_file', 'spotify_url', 'audio_url', or 'invalid'
         """
         if not input_path or not isinstance(input_path, str):
             return "invalid"
@@ -44,6 +46,10 @@ class InputProcessor:
         # Check if it's a local file
         if self._is_local_file(cleaned_input):
             return "local_file"
+
+        # Check if it's a URL
+        if self._is_url(cleaned_input):
+            return "audio_url"
 
         return "invalid"
 
@@ -61,6 +67,15 @@ class InputProcessor:
             path = Path(input_str)
             return path.exists() and path.is_file()
         except (OSError, ValueError):
+            return False
+
+    def _is_url(self, input_str: str) -> bool:
+        """Check if input is a URL."""
+        try:
+            from urllib.parse import urlparse
+            result = urlparse(input_str)
+            return all([result.scheme, result.netloc])
+        except Exception:
             return False
 
     def validate_local_file(self, file_path: str) -> Dict:
@@ -136,6 +151,44 @@ class InputProcessor:
         except Exception as e:
             return {"valid": False, "error": f"Spotify URL validation error: {str(e)}"}
 
+    def validate_audio_url(self, url: str) -> Dict:
+        """
+        Validate an audio URL.
+
+        Args:
+            url: URL to validate
+
+        Returns:
+            Validation result dictionary
+        """
+        try:
+            if not self._is_url(url):
+                return {"valid": False, "error": "Invalid URL format"}
+
+            # Initialize URL downloader if needed
+            if not self.url_downloader:
+                self.url_downloader = URLDownloader()
+
+            # Check if it's an audio URL
+            if not self.url_downloader.is_audio_url(url):
+                return {"valid": False, "error": "URL does not appear to be an audio file"}
+
+            # Get file info
+            file_info = self.url_downloader.get_file_info(url)
+            if not file_info["valid"]:
+                return {"valid": False, "error": f"Could not access URL: {file_info.get('error', 'Unknown error')}"}
+
+            return {
+                "valid": True,
+                "url": url,
+                "file_size_mb": file_info.get("file_size_mb", 0),
+                "content_type": file_info.get("content_type", ""),
+                "type": "audio_url",
+            }
+
+        except Exception as e:
+            return {"valid": False, "error": f"URL validation error: {str(e)}"}
+
     def _extract_spotify_track_id(self, url: str) -> Optional[str]:
         """Extract track ID from Spotify URL."""
         # Handle Spotify URI format
@@ -169,6 +222,10 @@ class InputProcessor:
                 if not temp_dir:
                     temp_dir = "/tmp/music_stem_separator"
                 return self._process_spotify_url(input_path, temp_dir)
+            elif input_type == "audio_url":
+                if not temp_dir:
+                    temp_dir = "/tmp/music_stem_separator"
+                return self._process_audio_url(input_path, temp_dir)
             else:
                 return {
                     "success": False,
@@ -223,6 +280,35 @@ class InputProcessor:
             "temp_file": True,  # Mark as temporary for cleanup
         }
 
+    def _process_audio_url(self, url: str, temp_dir: str) -> Dict:
+        """Process audio URL by downloading the file."""
+        validation = self.validate_audio_url(url)
+
+        if not validation["valid"]:
+            return {"success": False, "error": validation["error"]}
+
+        # Initialize URL downloader if needed
+        if not self.url_downloader:
+            self.url_downloader = URLDownloader()
+
+        # Download the file
+        download_result = self.url_downloader.download_file(url, temp_dir)
+
+        if not download_result["success"]:
+            return {
+                "success": False,
+                "error": f"URL download failed: {download_result.get('error', 'Unknown error')}",
+            }
+
+        return {
+            "success": True,
+            "input_type": "audio_url",
+            "audio_file": download_result["file_path"],
+            "url": url,
+            "file_size_mb": download_result.get("file_size_mb", 0),
+            "temp_file": True,
+        }
+
     def clean_input_path(self, input_path: str) -> str:
         """
         Clean and normalize input path string.
@@ -265,3 +351,6 @@ class InputProcessor:
         """
         if self.spotify_handler:
             self.spotify_handler.cleanup_temp_files(file_paths)
+        
+        if self.url_downloader:
+            self.url_downloader.cleanup_temp_files(file_paths)

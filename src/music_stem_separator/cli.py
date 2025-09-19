@@ -62,12 +62,14 @@ def main(
     - Path to a local audio file (MP3, WAV, FLAC, etc.)
     - Spotify track URL (https://open.spotify.com/track/...)
     - Spotify URI (spotify:track:...)
+    - Direct URL to audio file (MP3, WAV, FLAC, etc.)
 
     Examples:
     \b
         stem-separator song.mp3
         stem-separator song.mp3 --model htdemucs_ft --output ./my_stems
         stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
+        stem-separator "https://example.com/audio.mp3"
     """
     setup_logging(verbose)
     logger = logging.getLogger(__name__)
