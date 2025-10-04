@@ -44,6 +44,7 @@ class SpotifyHandler:
         self.settings = {
             "output_format": output_format,
             "bitrate": quality,
+            "audio_providers": ["youtube", "soundcloud"],  # Use YouTube and SoundCloud with fallback
         }
 
         logger.info(
@@ -119,10 +120,16 @@ class SpotifyHandler:
 
             logger.info(f"Downloading Spotify track: {track_id}")
 
-            # Initialize spotdl with credentials
+            # Initialize spotdl with credentials and settings
+            # Enable result filtering to avoid unavailable videos
+            downloader_settings = {
+                "audio_providers": self.settings["audio_providers"],
+                "filter_results": True,  # Filter out unavailable search results
+            }
             spotdl = Spotdl(
                 client_id=self.client_id,
-                client_secret=self.client_secret
+                client_secret=self.client_secret,
+                downloader_settings=downloader_settings
             )
 
             # Download the track
@@ -147,8 +154,14 @@ class SpotifyHandler:
             }
 
         except Exception as e:
-            logger.error(f"Spotify download failed: {str(e)}")
-            return {"success": False, "spotify_url": spotify_url, "error": str(e)}
+            error_msg = str(e)
+            if "No results found" in error_msg or "Requested format is not available" in error_msg:
+                error_msg = (
+                    f"Song with track ID '{track_id}' is not available for download due to copyright restrictions "
+                    "or is blocked on all audio platforms. Try a different song or use a local MP3 file instead."
+                )
+            logger.error(f"Spotify download failed: {error_msg}")
+            return {"success": False, "spotify_url": spotify_url, "error": error_msg}
 
     def get_download_path(self, output_dir: Union[str, Path], track_id: str) -> Path:
         """
