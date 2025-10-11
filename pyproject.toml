@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 stem-separator = "music_stem_separator.cli:main"
+stem-separator-ui = "music_stem_separator.gradio_ui:main"
 
 [build-system]
 requires = ["uv_build>=0.8.5,<0.9.0"]

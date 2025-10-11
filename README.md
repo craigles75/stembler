@@ -16,6 +16,14 @@ AI-powered music stem separation tool that extracts drums, bass, vocals, and oth
 - **⚡ High Performance**: GPU acceleration support for faster processing
 - **🔧 CLI Interface**: Simple command-line usage for automation and scripting
 
+> **⚠️ Known Issue: Spotify Downloads Currently Not Working**
+>
+> Spotify track downloads are temporarily unavailable due to a dependency version conflict between `spotdl` and `yt-dlp`. YouTube has made API changes that break older yt-dlp versions, but spotdl hasn't updated yet to support the newer versions.
+>
+> **Workaround**: Use local MP3/WAV/FLAC files instead. The stem separation works perfectly with local files!
+>
+> See [TODO.md](TODO.md) for technical details and status updates.
+
 ## 🚀 Quick Start
 
 ### Installation
@@ -32,28 +40,17 @@ uv sync
 pip install -e .
 ```
 
-### Spotify Setup (Required for Spotify URLs)
+### Spotify Setup (Currently Not Working - See Warning Above)
 
-To use Spotify track downloading, you need Spotify API credentials:
+~~To use Spotify track downloading, you need Spotify API credentials:~~
 
-1. **Get Spotify Credentials**:
-   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Create a new app
-   - Copy your `Client ID` and `Client Secret`
+**Note**: Spotify downloads are currently unavailable due to dependency issues. Use local audio files instead.
 
-2. **Set Environment Variables**:
-   ```bash
-   export SPOTIFY_CLIENT_ID="your_client_id_here"
-   export SPOTIFY_CLIENT_SECRET="your_client_secret_here"
-   ```
+When Spotify support is restored, you'll need:
+1. Spotify API credentials from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Environment variables: `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`
 
-   Or create a `.env` file:
-   ```bash
-   SPOTIFY_CLIENT_ID=your_client_id_here
-   SPOTIFY_CLIENT_SECRET=your_client_secret_here
-   ```
-
-📖 **Detailed setup instructions**: See [SETUP.md](SETUP.md) for complete setup guide.
+📖 **Setup instructions**: See [SETUP.md](SETUP.md) and [TODO.md](TODO.md) for status updates.
 
 ### Basic Usage
 
@@ -61,8 +58,8 @@ To use Spotify track downloading, you need Spotify API credentials:
 # Separate a local MP3 file
 stem-separator song.mp3
 
-# Process a Spotify track
-stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
+# Process a Spotify track (currently not working - see warning above)
+# stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
 
 # Use a specific model with custom output directory
 stem-separator song.mp3 --model htdemucs_ft --output ./my_stems
@@ -72,6 +69,11 @@ stem-separator song.mp3 --no-enhance
 
 # Enable verbose output
 stem-separator song.mp3 --verbose
+
+# Process different audio formats
+stem-separator song.wav
+stem-separator song.flac
+stem-separator song.m4a
 ```
 
 ## 📖 Detailed Usage
@@ -96,10 +98,10 @@ Options:
 
 ### Supported Input Formats
 
-- **Local Files**: MP3, WAV, FLAC, M4A, and other common audio formats
-- **Spotify URLs**: Direct track links and URIs
-  - `https://open.spotify.com/track/...`
-  - `spotify:track:...`
+- **Local Files**: MP3, WAV, FLAC, M4A, and other common audio formats ✅
+- **Spotify URLs**: ~~Direct track links and URIs~~ (Currently unavailable - see warning above)
+  - ~~`https://open.spotify.com/track/...`~~
+  - ~~`spotify:track:...`~~
 
 ### Available Models
 

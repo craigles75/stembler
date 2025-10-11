@@ -121,10 +121,11 @@ class SpotifyHandler:
             logger.info(f"Downloading Spotify track: {track_id}")
 
             # Initialize spotdl with credentials and settings
-            # Enable result filtering to avoid unavailable videos
+            # Disable strict filtering to allow more flexible matching
+            # YouTube API changes have made strict filtering too aggressive
             downloader_settings = {
                 "audio_providers": self.settings["audio_providers"],
-                "filter_results": True,  # Filter out unavailable search results
+                "filter_results": False,  # Allow all search results (filtering is too strict)
             }
             spotdl = Spotdl(
                 client_id=self.client_id,
