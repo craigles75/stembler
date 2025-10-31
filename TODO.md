@@ -1,44 +1,32 @@
 # TODO - Known Issues & Future Work
 
-## High Priority
+## Resolved Issues
 
-### Spotify Downloads Currently Broken (Dependency Issue)
+### ✅ Spotify Downloads Fixed (2025-10-31)
 
-**Issue:** Spotify track downloads are failing with "The downloaded file is empty" error.
+**Issue:** Spotify track downloads were failing with "The downloaded file is empty" error.
 
 **Root Cause:**
-- `spotdl 4.2.9` requires `yt-dlp < 2025.0.0`
-- YouTube has made API changes that break `yt-dlp 2024.12.23` (the version we're locked to)
-- Newer `yt-dlp >= 2025.9.0` fixes YouTube issues, but is incompatible with current spotdl
+- `spotdl 4.2.9` required `yt-dlp < 2025.0.0`
+- YouTube API changes broke `yt-dlp 2024.12.23`
+- Project was locked to incompatible versions
 
-**Current Status:**
-- `filter_results = False` is correctly set in `spotify_handler.py:128`
-- YouTube search finds videos successfully (19 results → filters to best match)
-- Download attempt fails with empty file error
+**Resolution:**
+- spotdl released v4.3.0+ which removed the `< 2025.0.0` constraint
+- Upgraded to `spotdl 4.4.3` and `yt-dlp 2025.10.22`
+- Spotify downloads now working as expected
 
-**Dependency Chain:**
-```
-our project
-  └─ spotdl >= 4.0.0
-      └─ yt-dlp >= 2024.11.4, < 2025.0.0  ← Locked to old version
-```
-
-**Workaround:**
-Use local MP3 files instead:
+**How it was fixed:**
 ```bash
-stem-separator path/to/song.mp3
+uv lock --upgrade-package spotdl
+uv sync
 ```
 
-**Resolution Path:**
-1. Monitor spotdl repository: https://github.com/spotDL/spotify-downloader
-2. Wait for spotdl to update yt-dlp constraint (likely version 4.3.0+)
-3. When updated, run: `uv lock --upgrade-package spotdl`
-4. Test Spotify downloads again
+**Resolved:** 2025-10-31
 
-**Files Modified:**
-- `src/music_stem_separator/spotify_handler.py` - Set `filter_results = False` (line 128)
+## High Priority
 
-**Last Updated:** 2025-10-11
+None currently!
 
 ---
 
