@@ -45,24 +45,24 @@ To use Spotify track downloading, you need Spotify API credentials:
 
 ```bash
 # Separate a local MP3 file
-stem-separator song.mp3
+uv run stem-separator song.mp3
 
 # Process a Spotify track
-stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
+uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
 
 # Use a specific model with custom output directory
-stem-separator song.mp3 --model htdemucs_ft --output ./my_stems
+uv run stem-separator song.mp3 --model htdemucs_ft --output ./my_stems
 
 # Disable audio enhancement for faster processing
-stem-separator song.mp3 --no-enhance
+uv run stem-separator song.mp3 --no-enhance
 
 # Enable verbose output
-stem-separator song.mp3 --verbose
+uv run stem-separator song.mp3 --verbose
 
 # Process different audio formats
-stem-separator song.wav
-stem-separator song.flac
-stem-separator song.m4a
+uv run stem-separator song.wav
+uv run stem-separator song.flac
+uv run stem-separator song.m4a
 ```
 
 ## 📖 Detailed Usage
@@ -70,7 +70,7 @@ stem-separator song.m4a
 ### Command Line Options
 
 ```bash
-stem-separator [OPTIONS] INPUT_PATH
+uv run stem-separator [OPTIONS] INPUT_PATH
 
 Arguments:
   INPUT_PATH    Path to audio file or Spotify URL
