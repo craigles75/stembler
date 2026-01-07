@@ -12,8 +12,10 @@ from pathlib import Path
 
 from .widgets.file_input import FileInputWidget
 from .widgets.process_button import ProcessButton
+from .widgets.progress_display import ProgressDisplay
 from .widgets.result_display import ResultDisplay
 from .controllers.processing_controller import ProcessingController
+from .utils.progress_tracker import ProgressTracker
 from .models import AudioInput
 
 
@@ -24,6 +26,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._controller = ProcessingController()
         self._current_audio_input: AudioInput | None = None
+        self._progress_tracker: ProgressTracker | None = None
 
         self._setup_ui()
         self._connect_signals()
@@ -69,6 +72,10 @@ class MainWindow(QMainWindow):
         # Process button
         self.process_button = ProcessButton()
         layout.addWidget(self.process_button)
+
+        # Progress display
+        self.progress_display = ProgressDisplay()
+        layout.addWidget(self.progress_display)
 
         # Result display
         self.result_display = ResultDisplay()
@@ -154,13 +161,28 @@ class MainWindow(QMainWindow):
         self.file_input.set_enabled(False)
         self.result_display.clear()
 
+        # Create progress tracker for ETA estimation
+        input_path = self._current_audio_input.path if self._current_audio_input else None
+        self._progress_tracker = ProgressTracker(model_name="htdemucs", file_path=input_path)
+        self._progress_tracker.start()
+
+        # Show progress display
+        self.progress_display.start_processing()
+
     def _on_progress_updated(self, percent: int, message: str, stage: str) -> None:
         """Handle progress update."""
         # Update window title with progress
-        self.setWindowTitle(f"Stembler - Processing: {percent}% - {message}")
+        self.setWindowTitle(f"Stembler - Processing: {percent}%")
 
-        # Could update a progress bar if we add one
-        # For now, just update the title
+        # Update progress tracker
+        if self._progress_tracker:
+            self._progress_tracker.update(percent)
+            eta_seconds = self._progress_tracker.estimate_remaining_seconds(percent)
+        else:
+            eta_seconds = None
+
+        # Update progress display
+        self.progress_display.update_progress(percent, message, stage, eta_seconds)
 
     def _on_processing_completed(self, output_bundle) -> None:
         """Handle successful processing completion."""
@@ -169,13 +191,23 @@ class MainWindow(QMainWindow):
         self.file_input.set_enabled(True)
         self.setWindowTitle("Stembler - Music Stem Separator")
 
+        # Update progress display to show completion
+        self.progress_display.complete_processing()
+
+        # Show result
         self.result_display.show_success(output_bundle)
 
         # Show success message
+        elapsed_time = (
+            self._progress_tracker.format_elapsed_time()
+            if self._progress_tracker
+            else "unknown"
+        )
         QMessageBox.information(
             self,
             "Success",
             f"Stem separation completed successfully!\n\n"
+            f"Time taken: {elapsed_time}\n"
             f"Output saved to:\n{output_bundle.track_directory}",
         )
 
@@ -185,6 +217,9 @@ class MainWindow(QMainWindow):
         self.process_button.set_ready_to_process(True)
         self.file_input.set_enabled(True)
         self.setWindowTitle("Stembler - Music Stem Separator")
+
+        # Update progress display to show error
+        self.progress_display.error_processing(error_message)
 
         self.result_display.show_error(error_message)
 
@@ -196,6 +231,9 @@ class MainWindow(QMainWindow):
         self.process_button.set_ready_to_process(True)
         self.file_input.set_enabled(True)
         self.setWindowTitle("Stembler - Music Stem Separator")
+
+        # Reset progress display
+        self.progress_display.reset()
 
         QMessageBox.information(
             self,

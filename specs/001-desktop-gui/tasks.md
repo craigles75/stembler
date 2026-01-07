@@ -153,14 +153,14 @@ Each user story phase can be tested independently without requiring other phases
 
 ### Tasks
 
-- [ ] T039 [P] [US2] Create ProgressDisplay widget in src/music_stem_separator/gui/widgets/progress_display.py
-- [ ] T040 [P] [US2] Add progress bar, percentage label, and ETA label to ProgressDisplay
-- [ ] T041 [P] [US2] Add status label for current stage message
-- [ ] T042 [US2] Create ProgressTracker utility in src/music_stem_separator/gui/utils/progress_tracker.py
-- [ ] T043 [US2] Implement time estimation logic based on file size and model
-- [ ] T044 [US2] Connect process_track() progress callbacks to ProgressDisplay via signals
-- [ ] T045 [US2] Add ProgressDisplay to MainWindow layout
-- [ ] T046 [US2] Test progress updates with 5-minute audio file
+- [X] T039 [P] [US2] Create ProgressDisplay widget in src/music_stem_separator/gui/widgets/progress_display.py
+- [X] T040 [P] [US2] Add progress bar, percentage label, and ETA label to ProgressDisplay
+- [X] T041 [P] [US2] Add status label for current stage message
+- [X] T042 [US2] Create ProgressTracker utility in src/music_stem_separator/gui/utils/progress_tracker.py
+- [X] T043 [US2] Implement time estimation logic based on file size and model
+- [X] T044 [US2] Connect process_track() progress callbacks to ProgressDisplay via signals
+- [X] T045 [US2] Add ProgressDisplay to MainWindow layout
+- [X] T046 [US2] Test progress updates with 5-minute audio file
 
 ---
 
