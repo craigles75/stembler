@@ -190,10 +190,24 @@ class FileInputWidget(QWidget):
         input_type = self._current_input.input_type.value.replace("_", " ").title()
         display_name = self._current_input.display_name
 
-        self.info_label.setText(f"✓ Valid {input_type}: {display_name}")
+        # Special handling for Spotify URLs
+        if self._current_input.input_type.value == "spotify_url":
+            track_info = self._current_input.get_spotify_preview_info()
+            if track_info:
+                track_name, artist = track_info
+                info_text = f"✓ Spotify Track: {track_name} (ID: {artist})"
+                drop_text = f"🎵 Spotify: {track_name}"
+            else:
+                info_text = f"✓ Valid {input_type}"
+                drop_text = "🎵 Spotify Track"
+        else:
+            info_text = f"✓ Valid {input_type}: {display_name}"
+            drop_text = f"Selected: {display_name}"
+
+        self.info_label.setText(info_text)
         self.info_label.show()
 
-        self.drop_label.setText(f"Selected: {display_name}")
+        self.drop_label.setText(drop_text)
         self.drop_label.setStyleSheet(
             """
             QLabel {

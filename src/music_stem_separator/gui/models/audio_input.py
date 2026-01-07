@@ -2,8 +2,9 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from enum import Enum
+import re
 
 
 class InputType(Enum):
@@ -63,6 +64,45 @@ class AudioInput:
             "spotify:track:",
         ]
         return any(pattern in path for pattern in spotify_patterns)
+
+    def extract_spotify_track_id(self) -> Optional[str]:
+        """
+        Extract Spotify track ID from the URL.
+
+        Returns:
+            Track ID string, or None if not a Spotify URL
+        """
+        if self.input_type != InputType.SPOTIFY_URL:
+            return None
+
+        # Pattern 1: https://open.spotify.com/track/TRACK_ID?...
+        match = re.search(r"open\.spotify\.com/track/([a-zA-Z0-9]+)", self.path)
+        if match:
+            return match.group(1)
+
+        # Pattern 2: spotify:track:TRACK_ID
+        match = re.search(r"spotify:track:([a-zA-Z0-9]+)", self.path)
+        if match:
+            return match.group(1)
+
+        return None
+
+    def get_spotify_preview_info(self) -> Optional[Tuple[str, str]]:
+        """
+        Get preview info for Spotify URL.
+
+        For now, returns track ID. In future, could fetch metadata from Spotify API.
+
+        Returns:
+            Tuple of (track_name, artist) or None
+        """
+        track_id = self.extract_spotify_track_id()
+        if not track_id:
+            return None
+
+        # For now, just return the track ID as a preview
+        # In the future, this could call Spotify API to get actual track info
+        return (f"Spotify Track", track_id[:8])  # Show first 8 chars of ID
 
     def _is_direct_url(self, path: str) -> bool:
         """Check if input is a direct URL to an audio file."""

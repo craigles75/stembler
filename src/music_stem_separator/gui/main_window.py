@@ -16,7 +16,11 @@ from .widgets.progress_display import ProgressDisplay
 from .widgets.result_display import ResultDisplay
 from .controllers.processing_controller import ProcessingController
 from .utils.progress_tracker import ProgressTracker
-from .models import AudioInput
+from .utils.credential_utils import (
+    check_spotify_credentials,
+    get_credential_setup_instructions,
+)
+from .models import AudioInput, InputType
 
 
 class MainWindow(QMainWindow):
@@ -121,6 +125,13 @@ class MainWindow(QMainWindow):
             self._show_error("Please select a valid audio file first")
             return
 
+        # Check Spotify credentials if processing a Spotify URL
+        if self._current_audio_input.input_type == InputType.SPOTIFY_URL:
+            credentials_valid, error_msg = check_spotify_credentials()
+            if not credentials_valid:
+                self._show_spotify_setup_dialog(error_msg)
+                return
+
         # Get default output directory (user's Music folder / Stembler Output)
         output_dir = self._get_default_output_dir()
 
@@ -166,8 +177,12 @@ class MainWindow(QMainWindow):
         self._progress_tracker = ProgressTracker(model_name="htdemucs", file_path=input_path)
         self._progress_tracker.start()
 
-        # Show progress display
-        self.progress_display.start_processing()
+        # Show progress display (with download message for Spotify/URLs)
+        is_download = (
+            self._current_audio_input
+            and self._current_audio_input.requires_download
+        )
+        self.progress_display.start_processing(is_download=is_download)
 
     def _on_progress_updated(self, percent: int, message: str, stage: str) -> None:
         """Handle progress update."""

@@ -181,12 +181,12 @@ Each user story phase can be tested independently without requiring other phases
 
 ### Tasks
 
-- [ ] T047 [P] [US3] Add Spotify URL detection to FileInputWidget validation
-- [ ] T048 [P] [US3] Display track name and artist when Spotify URL is validated
-- [ ] T049 [US3] Add download progress display before processing starts
-- [ ] T050 [US3] Implement credential validation in SettingsController
-- [ ] T051 [US3] Show "Configure Spotify Credentials" dialog when URL pasted without credentials
-- [ ] T052 [US3] Test Spotify URL processing end-to-end with valid credentials
+- [X] T047 [P] [US3] Add Spotify URL detection to FileInputWidget validation
+- [X] T048 [P] [US3] Display track name and artist when Spotify URL is validated
+- [X] T049 [US3] Add download progress display before processing starts
+- [X] T050 [US3] Implement credential validation in SettingsController
+- [X] T051 [US3] Show "Configure Spotify Credentials" dialog when URL pasted without credentials
+- [X] T052 [US3] Test Spotify URL processing end-to-end with valid credentials
 
 ---
 

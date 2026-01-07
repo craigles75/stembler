@@ -199,12 +199,21 @@ class ProgressDisplay(QWidget):
             minutes = (seconds % 3600) // 60
             return f"{hours}h {minutes}m remaining"
 
-    def start_processing(self) -> None:
-        """Show progress display and reset to initial state."""
+    def start_processing(self, is_download: bool = False) -> None:
+        """
+        Show progress display and reset to initial state.
+
+        Args:
+            is_download: If True, show downloading message
+        """
         self.progress_bar.setValue(0)
         self.percentage_label.setText("0%")
-        self.status_label.setText("Starting...")
-        self.stage_label.setText("")
+        if is_download:
+            self.status_label.setText("Downloading from Spotify...")
+            self.stage_label.setText("This may take a moment")
+        else:
+            self.status_label.setText("Starting...")
+            self.stage_label.setText("")
         self.eta_label.setText("")
         self.show()
 
