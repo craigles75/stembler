@@ -128,11 +128,11 @@ Each user story phase can be tested independently without requiring other phases
 
 ### Tasks
 
-- [ ] T034 [P] [US5] Run full CLI test suite (pytest tests/test_cli.py) and verify 100% pass
-- [ ] T035 [P] [US5] Test CLI with all input types (local file, Spotify URL, direct URL)
-- [ ] T036 [P] [US5] Test CLI with all models (htdemucs, htdemucs_ft, mdx_extra, mdx_q)
-- [ ] T037 [P] [US5] Verify CLI and GUI use separate settings (no cross-contamination)
-- [ ] T038 [US5] Document CLI/GUI independence in README.md
+- [X] T034 [P] [US5] Run full CLI test suite (pytest tests/test_cli.py) and verify 100% pass
+- [X] T035 [P] [US5] Test CLI with all input types (local file, Spotify URL, direct URL)
+- [X] T036 [P] [US5] Test CLI with all models (htdemucs, htdemucs_ft, mdx_extra, mdx_q)
+- [X] T037 [P] [US5] Verify CLI and GUI use separate settings (no cross-contamination)
+- [X] T038 [US5] Document CLI/GUI independence in README.md
 
 ---
 

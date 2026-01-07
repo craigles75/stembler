@@ -14,7 +14,9 @@ AI-powered music stem separation tool that extracts drums, bass, vocals, and oth
 - **🎛️ Audio Enhancement**: Optional post-processing for improved quality
 - **📁 Smart Output Organization**: Automatically organizes stems with metadata
 - **⚡ High Performance**: GPU acceleration support for faster processing
-- **🔧 CLI Interface**: Simple command-line usage for automation and scripting
+- **🖥️ Desktop GUI**: User-friendly drag-and-drop interface for non-technical users
+- **🔧 CLI Interface**: Powerful command-line tool for automation and scripting
+- **🔀 Dual Interface**: GUI and CLI work independently - use whichever suits your workflow
 
 ## 🚀 Quick Start
 
@@ -43,6 +45,21 @@ To use Spotify track downloading, you need Spotify API credentials:
 
 ### Basic Usage
 
+#### GUI Application (Recommended for most users)
+
+```bash
+# Launch the desktop application
+uv run stem-separator-gui
+```
+
+Then simply:
+1. **Drag and drop** an audio file onto the window, or click "Browse" to select one
+2. Click **"Separate Stems"** to start processing
+3. Wait for completion (progress shown in window title)
+4. Click **"Open Output Folder"** to view your separated stems
+
+#### Command Line Interface (For automation & scripting)
+
 ```bash
 # Separate a local MP3 file
 uv run stem-separator song.mp3
@@ -66,6 +83,22 @@ uv run stem-separator song.m4a
 ```
 
 ## 📖 Detailed Usage
+
+### GUI vs CLI: Choose Your Interface
+
+Both interfaces provide the same core functionality, but work **completely independently**:
+
+| Feature | GUI (`stem-separator-gui`) | CLI (`stem-separator`) |
+|---------|---------------------------|------------------------|
+| **Best For** | Non-technical users, visual feedback | Automation, scripting, batch processing |
+| **Input Method** | Drag-and-drop or Browse button | Command-line arguments |
+| **Progress Display** | Visual progress bar and messages | Optional verbose output |
+| **Settings** | Persistent GUI settings (future) | Command-line flags only |
+| **Output Location** | `~/Music/Stembler Output` (default) | `./output` or custom via `--output` |
+| **Model Selection** | Via settings panel (future) | Via `--model` flag |
+| **Processing** | Background thread (non-blocking) | Foreground (blocks terminal) |
+
+**Key Point**: GUI and CLI use **separate, independent configurations**. Your CLI command-line preferences never affect GUI behavior, and vice versa. Both can be used on the same system without conflicts.
 
 ### Command Line Options
 
@@ -148,17 +181,37 @@ uv run ruff check src/ tests/
 ```
 stembler/
 ├── src/music_stem_separator/
-│   ├── __init__.py
-│   ├── cli.py              # Command-line interface
-│   ├── input_processor.py  # Input validation & routing
-│   ├── separator.py        # Core Demucs wrapper
-│   ├── spotify_handler.py  # Spotify download functionality
-│   ├── stem_processor.py   # Audio enhancement
-│   └── output_manager.py   # File organization
-├── tests/                  # Test suite
-├── samples/               # Sample audio files (gitignored)
-├── output/                # Generated stems (gitignored)
-└── pyproject.toml         # Project configuration
+│   ├── cli.py                      # Command-line interface
+│   ├── gui_main.py                 # GUI application entry point
+│   ├── shared/
+│   │   └── process_track.py        # Shared processing logic (CLI + GUI)
+│   ├── gui/
+│   │   ├── main_window.py          # Main GUI window
+│   │   ├── models/                 # Data models
+│   │   │   ├── audio_input.py      # Input validation
+│   │   │   ├── processing_job.py   # Job tracking
+│   │   │   └── output_bundle.py    # Output management
+│   │   ├── widgets/                # UI components
+│   │   │   ├── file_input.py       # Drag-drop input
+│   │   │   ├── process_button.py   # Action button
+│   │   │   └── result_display.py   # Results view
+│   │   ├── controllers/            # Business logic
+│   │   │   └── processing_controller.py
+│   │   └── utils/                  # Helper functions
+│   │       └── platform_utils.py   # Cross-platform utilities
+│   ├── input_processor.py          # Input validation & routing
+│   ├── separator.py                # Core Demucs wrapper
+│   ├── spotify_handler.py          # Spotify download
+│   ├── stem_processor.py           # Audio enhancement
+│   └── output_manager.py           # File organization
+├── tests/                          # Test suite
+│   ├── test_cli.py                 # CLI tests
+│   ├── test_shared_process_track.py # Shared logic tests
+│   └── test_gui/                   # GUI tests (future)
+├── specs/                          # Feature specifications
+├── samples/                        # Sample audio files (gitignored)
+├── output/                         # Generated stems (gitignored)
+└── pyproject.toml                  # Project configuration
 ```
 
 ## 🧪 Testing
@@ -186,6 +239,15 @@ uv run pytest --cov=src/music_stem_separator --cov-report=html
 - `torch` & `torchaudio` - PyTorch for ML models
 - `numpy` & `scipy` - Numerical computing
 - `soundfile` - Audio file I/O
+
+### GUI Dependencies (Optional)
+- `PyQt6` - Cross-platform GUI framework
+- `platformdirs` - Platform-specific directories
+
+Install GUI dependencies with:
+```bash
+uv sync --extra gui
+```
 
 ### Development Dependencies
 - `pytest` - Testing framework
