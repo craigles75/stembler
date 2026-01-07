@@ -13,3 +13,20 @@ wheels/
 samples/
 output/
 .env
+
+# GUI-specific
+packaging/build/
+packaging/dist/
+*.dmg
+*.msi
+*.exe
+*.app
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.tmp
+.claude/

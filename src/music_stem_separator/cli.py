@@ -8,10 +8,12 @@ from typing import Optional
 import click
 
 from . import __version__
-from .input_processor import InputProcessor
-from .separator import StemSeparator
-from .stem_processor import StemProcessor
-from .output_manager import OutputManager
+from .shared.process_track import process_track
+# Keep these imports for backward compatibility with existing tests
+from .input_processor import InputProcessor  # noqa: F401
+from .separator import StemSeparator  # noqa: F401
+from .stem_processor import StemProcessor  # noqa: F401
+from .output_manager import OutputManager  # noqa: F401
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -85,6 +87,7 @@ def main(
             device=device,
             enable_enhancement=not no_enhance,
             verbose=verbose,
+            progress_callback=_cli_progress_callback,
         )
 
         if result["success"]:
@@ -116,147 +119,28 @@ def main(
         sys.exit(1)
 
 
-def process_track(
-    input_path: str,
-    output_dir: str,
-    model_name: str = "htdemucs",
-    device: Optional[str] = None,
-    enable_enhancement: bool = True,
-    verbose: bool = False,
-) -> dict:
-    """
-    Process a single track through the complete stem separation pipeline.
+def _cli_progress_callback(progress_data: dict) -> None:
+    """Progress callback for CLI that outputs to console."""
+    message = progress_data.get("message", "")
+    percent = progress_data.get("percent", 0)
+    stage = progress_data.get("stage", "")
 
-    Args:
-        input_path: Input file path or Spotify URL
-        output_dir: Output directory
-        model_name: Demucs model name
-        device: Device to use for processing
-        enable_enhancement: Whether to apply audio enhancement
-        verbose: Enable verbose logging
-
-    Returns:
-        Processing result dictionary
-    """
-    logger = logging.getLogger(__name__)
-
-    try:
-        # Step 1: Process input
-        click.echo("🔍 Processing input...")
-        input_processor = InputProcessor()
-        input_result = input_processor.process_input(
-            input_path, temp_dir=f"{output_dir}/temp"
-        )
-
-        if not input_result["success"]:
-            return {
-                "success": False,
-                "error": f"Input processing failed: {input_result.get('error', 'Unknown error')}",
-            }
-
-        audio_file = input_result["audio_file"]
-        input_type = input_result["input_type"]
-
-        click.echo(f"✅ Input processed: {input_type}")
-        if verbose:
-            click.echo(f"   Audio file: {audio_file}")
-
-        # Step 2: Separate stems
-        click.echo(f"🤖 Separating stems using {model_name}...")
-        separator = StemSeparator(model_name=model_name, device=device)
-        separation_result = separator.separate_stems(
-            audio_file, f"{output_dir}/temp_stems"
-        )
-
-        if not separation_result["success"]:
-            return {
-                "success": False,
-                "error": f"Stem separation failed: {separation_result.get('error', 'Unknown error')}",
-            }
-
-        click.echo("✅ Stem separation completed")
-        if verbose:
-            stems = separation_result.get("stems", {})
-            click.echo(f"   Separated {len(stems)} stems: {list(stems.keys())}")
-
-        # Step 3: Process stems (enhancement)
-        processing_results = None
-        if enable_enhancement:
-            click.echo("🎛️  Enhancing audio quality...")
-            stem_processor = StemProcessor(enable_enhancement=True)
-            processing_results = stem_processor.process_stem_files(
-                separation_result["stems"], f"{output_dir}/temp_processed"
-            )
-
-            if processing_results["success"]:
-                click.echo("✅ Audio enhancement completed")
-                # Update stem paths to processed versions
-                for stem_name, result in processing_results["processed_stems"].items():
-                    separation_result["stems"][stem_name] = result["output_file"]
-            else:
-                click.echo("⚠️  Audio enhancement failed, using original stems")
-        else:
-            click.echo("⏭️  Skipping audio enhancement")
-
-        # Step 4: Organize output
-        click.echo("📁 Organizing output files...")
-        track_name = Path(audio_file).stem
-        output_manager = OutputManager(output_dir)
-
-        organization_result = output_manager.organize_stem_files(
-            separation_result["stems"], track_name
-        )
-
-        if not organization_result["success"]:
-            return {
-                "success": False,
-                "error": f"Output organization failed: {organization_result.get('error', 'Unknown error')}",
-            }
-
-        # Step 5: Generate metadata and reports
-        metadata = output_manager.generate_metadata(
-            track_name, separation_result, processing_results
-        )
-
-        output_structure = organization_result["output_structure"]
-        metadata_result = output_manager.save_metadata(
-            metadata, output_structure["track_dir"]
-        )
-
-        summary_report = output_manager.create_summary_report(
-            track_name, separation_result, processing_results, output_structure
-        )
-
-        output_summary = output_manager.get_output_summary(output_structure)
-
-        # Step 6: Cleanup temporary files
-        if verbose:
-            click.echo("🧹 Cleaning up temporary files...")
-
-        temp_files = []
-        if input_result.get("temp_file"):
-            temp_files.append(audio_file)
-
-        if temp_files:
-            output_manager.cleanup_temp_files(temp_files)
-
-        return {
-            "success": True,
-            "track_name": track_name,
-            "input_type": input_type,
-            "stems_separated": list(separation_result["stems"].keys()),
-            "enhancement_applied": enable_enhancement
-            and processing_results
-            and processing_results["success"],
-            "output_structure": output_structure,
-            "metadata_saved": metadata_result["success"] if metadata_result else False,
-            "summary_report": summary_report,
-            "output_summary": output_summary,
-        }
-
-    except Exception as e:
-        logger.error(f"Processing failed: {e}")
-        return {"success": False, "error": str(e)}
+    # Only show key milestones to avoid cluttering CLI output
+    if percent in [0, 10, 20, 80, 90, 100] or stage == "error":
+        if stage == "error":
+            click.echo(f"❌ {message}")
+        elif percent == 0:
+            click.echo(f"🔍 {message}")
+        elif percent == 10:
+            click.echo(f"✅ {message}")
+        elif percent == 20:
+            click.echo(f"🤖 {message}")
+        elif percent == 80:
+            click.echo(f"✅ {message}")
+        elif percent == 90:
+            click.echo(f"🎛️  {message}")
+        elif percent == 100:
+            click.echo(f"📁 {message}")
 
 
 if __name__ == "__main__":

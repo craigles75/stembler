@@ -58,3 +58,10 @@ The planned modular architecture includes:
 ## Output Structure
 
 Separated stems will be organized in an `output/` directory with individual WAV files for each stem (drums, bass, vocals, other).
+
+## Active Technologies
+- Python 3.12+ (matching existing CLI) (001-desktop-gui)
+- File-based user settings in platform-standard config directories (~/Library/Application Support on macOS, AppData on Windows) (001-desktop-gui)
+
+## Recent Changes
+- 001-desktop-gui: Added Python 3.12+ (matching existing CLI)
