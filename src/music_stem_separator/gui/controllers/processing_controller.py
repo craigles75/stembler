@@ -138,7 +138,17 @@ class ProcessingController(QObject):
         if self._worker and self._worker.isRunning():
             self._worker.cancel()
             self._worker.quit()
-            self._worker.wait(5000)  # Wait up to 5 seconds
+
+            # Wait for thread to finish, up to 5 seconds
+            if not self._worker.wait(5000):
+                # Thread didn't finish in time - force terminate
+                self._worker.terminate()
+                self._worker.wait()  # Wait for termination
+
+            # Now cleanup safely - thread is guaranteed to be stopped
+            if self._worker:
+                self._worker.deleteLater()
+                self._worker = None
 
             if self._current_job:
                 self._current_job.cancel()

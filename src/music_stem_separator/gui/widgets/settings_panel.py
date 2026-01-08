@@ -14,11 +14,13 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QMessageBox,
     QDialogButtonBox,
+    QStyle,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from pathlib import Path
 
 from ..models.user_settings import UserSettings
+from ..utils.theme import Theme
 
 
 class SettingsPanel(QDialog):
@@ -36,11 +38,20 @@ class SettingsPanel(QDialog):
     def _setup_ui(self) -> None:
         """Set up the user interface."""
         self.setWindowTitle("Stembler Settings")
-        self.setMinimumWidth(600)
+        self.setMinimumWidth(650)
         self.setModal(True)
 
+        # Apply dialog background styling
+        self.setStyleSheet(
+            f"""
+            QDialog {{
+                background-color: {Theme.BACKGROUND_SECONDARY};
+            }}
+            """
+        )
+
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
+        layout.setSpacing(Theme.SPACING_LG)
 
         # Processing Settings Group
         processing_group = self._create_processing_settings_group()
@@ -61,34 +72,78 @@ class SettingsPanel(QDialog):
     def _create_processing_settings_group(self) -> QGroupBox:
         """Create processing settings group box."""
         group = QGroupBox("Processing Settings")
-        form_layout = QFormLayout()
-        form_layout.setSpacing(15)
+        # Card-style container with white background
+        group.setStyleSheet(
+            f"""
+            QGroupBox {{
+                background-color: {Theme.BACKGROUND_PRIMARY};
+                border: 1px solid {Theme.BORDER_LIGHT};
+                border-radius: 12px;
+                padding: {Theme.SPACING_LG}px;
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                margin-top: {Theme.SPACING_MD}px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: {Theme.SPACING_MD}px;
+                padding: 0 {Theme.SPACING_SM}px;
+            }}
+            """
+        )
 
-        # Model selection dropdown
+        form_layout = QFormLayout()
+        form_layout.setSpacing(Theme.SPACING_MD)
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+        # Model selection dropdown with custom styling
         self.model_combo = QComboBox()
         models = UserSettings.get_available_models()
         for model_id, description in models:
             self.model_combo.addItem(description, model_id)
         self.model_combo.setToolTip("Select the AI model to use for stem separation")
+        self.model_combo.setStyleSheet(Theme.input_style())
         form_layout.addRow("Model:", self.model_combo)
 
         # Model info label
         model_info = QLabel(
             "HTDemucs is recommended for most users (balanced quality and speed)."
         )
-        model_info.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        model_info.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.TEXT_TERTIARY};
+                font-size: {Theme.FONT_SIZE_XS}px;
+                font-style: italic;
+            }}
+            """
+        )
         model_info.setWordWrap(True)
         form_layout.addRow("", model_info)
 
         # Output directory picker
         output_layout = QHBoxLayout()
+        output_layout.setSpacing(Theme.SPACING_SM)
+
         self.output_dir_input = QLineEdit()
         self.output_dir_input.setPlaceholderText("Default: ~/Music/Stembler Output")
         self.output_dir_input.setToolTip("Directory where separated stems will be saved")
+        self.output_dir_input.setStyleSheet(Theme.input_style())
         output_layout.addWidget(self.output_dir_input, stretch=1)
 
-        self.browse_button = QPushButton("Browse...")
+        # Browse button with folder icon
+        self.browse_button = QPushButton("  Browse...")
+        folder_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon)
+        self.browse_button.setIcon(folder_icon)
         self.browse_button.clicked.connect(self._on_browse_output_dir)
+        self.browse_button.setStyleSheet(
+            Theme.button_style(
+                Theme.SECONDARY,
+                Theme.SECONDARY_HOVER,
+                Theme.SECONDARY_PRESSED,
+                height=Theme.INPUT_HEIGHT,
+            )
+        )
         output_layout.addWidget(self.browse_button)
 
         form_layout.addRow("Output Directory:", output_layout)
@@ -99,6 +154,14 @@ class SettingsPanel(QDialog):
         self.enhancement_checkbox.setToolTip(
             "Applies post-processing to improve audio quality"
         )
+        self.enhancement_checkbox.setStyleSheet(
+            f"""
+            QCheckBox {{
+                font-size: {Theme.FONT_SIZE_SM}px;
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
+        )
         form_layout.addRow("Enhancement:", self.enhancement_checkbox)
 
         group.setLayout(form_layout)
@@ -107,7 +170,28 @@ class SettingsPanel(QDialog):
     def _create_spotify_credentials_group(self) -> QGroupBox:
         """Create Spotify credentials group box."""
         group = QGroupBox("Spotify Integration")
+        # Card-style container with white background
+        group.setStyleSheet(
+            f"""
+            QGroupBox {{
+                background-color: {Theme.BACKGROUND_PRIMARY};
+                border: 1px solid {Theme.BORDER_LIGHT};
+                border-radius: 12px;
+                padding: {Theme.SPACING_LG}px;
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                margin-top: {Theme.SPACING_MD}px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: {Theme.SPACING_MD}px;
+                padding: 0 {Theme.SPACING_SM}px;
+            }}
+            """
+        )
+
         layout = QVBoxLayout()
+        layout.setSpacing(Theme.SPACING_MD)
 
         # Instructions label
         instructions = QLabel(
@@ -115,23 +199,41 @@ class SettingsPanel(QDialog):
             "Get them from the Spotify Developer Dashboard."
         )
         instructions.setWordWrap(True)
-        instructions.setStyleSheet("color: #666; font-size: 11px; margin-bottom: 10px;")
+        instructions.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.FONT_SIZE_XS}px;
+                margin-bottom: {Theme.SPACING_SM}px;
+            }}
+            """
+        )
         layout.addWidget(instructions)
 
         # Form for credentials
         form_layout = QFormLayout()
-        form_layout.setSpacing(10)
+        form_layout.setSpacing(Theme.SPACING_SM)
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
         # Client ID
         self.spotify_client_id_input = QLineEdit()
         self.spotify_client_id_input.setPlaceholderText("Enter your Spotify Client ID")
         self.spotify_client_id_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.spotify_client_id_input.setStyleSheet(Theme.input_style())
         form_layout.addRow("Client ID:", self.spotify_client_id_input)
 
         # Show/Hide Client ID button
         show_client_id_btn = QPushButton("Show")
-        show_client_id_btn.setMaximumWidth(60)
+        show_client_id_btn.setMaximumWidth(80)
         show_client_id_btn.setCheckable(True)
+        show_client_id_btn.setStyleSheet(
+            Theme.button_style(
+                Theme.SECONDARY,
+                Theme.SECONDARY_HOVER,
+                Theme.SECONDARY_PRESSED,
+                height=Theme.INPUT_HEIGHT - 8,
+            )
+        )
         show_client_id_btn.toggled.connect(
             lambda checked: self.spotify_client_id_input.setEchoMode(
                 QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
@@ -145,12 +247,21 @@ class SettingsPanel(QDialog):
             "Enter your Spotify Client Secret"
         )
         self.spotify_client_secret_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.spotify_client_secret_input.setStyleSheet(Theme.input_style())
         form_layout.addRow("Client Secret:", self.spotify_client_secret_input)
 
         # Show/Hide Client Secret button
         show_secret_btn = QPushButton("Show")
-        show_secret_btn.setMaximumWidth(60)
+        show_secret_btn.setMaximumWidth(80)
         show_secret_btn.setCheckable(True)
+        show_secret_btn.setStyleSheet(
+            Theme.button_style(
+                Theme.SECONDARY,
+                Theme.SECONDARY_HOVER,
+                Theme.SECONDARY_PRESSED,
+                height=Theme.INPUT_HEIGHT - 8,
+            )
+        )
         show_secret_btn.toggled.connect(
             lambda checked: self.spotify_client_secret_input.setEchoMode(
                 QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
@@ -160,21 +271,39 @@ class SettingsPanel(QDialog):
 
         layout.addLayout(form_layout)
 
-        # Test credentials button
+        # Test credentials button with secondary styling
         test_button_layout = QHBoxLayout()
         test_button_layout.addStretch()
-        self.test_credentials_button = QPushButton("Test Credentials")
+        self.test_credentials_button = QPushButton("  Test Credentials")
+        # Add a checkmark icon
+        check_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogApplyButton)
+        self.test_credentials_button.setIcon(check_icon)
         self.test_credentials_button.clicked.connect(self._on_test_credentials)
+        self.test_credentials_button.setStyleSheet(
+            Theme.button_style(
+                Theme.SECONDARY,
+                Theme.SECONDARY_HOVER,
+                Theme.SECONDARY_PRESSED,
+                height=40,
+            )
+        )
         test_button_layout.addWidget(self.test_credentials_button)
         layout.addLayout(test_button_layout)
 
         # Link to Spotify Developer Dashboard
         link_layout = QHBoxLayout()
         link_label = QLabel(
-            '<a href="https://developer.spotify.com/dashboard">Open Spotify Developer Dashboard</a>'
+            '<a href="https://developer.spotify.com/dashboard" style="color: ' + Theme.PRIMARY + ';">🔗 Open Spotify Developer Dashboard</a>'
         )
         link_label.setOpenExternalLinks(True)
-        link_label.setStyleSheet("margin-top: 10px;")
+        link_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_SM}px;
+                margin-top: {Theme.SPACING_SM}px;
+            }}
+            """
+        )
         link_layout.addWidget(link_label)
         link_layout.addStretch()
         layout.addLayout(link_layout)

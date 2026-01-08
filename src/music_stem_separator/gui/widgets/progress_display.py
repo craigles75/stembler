@@ -8,8 +8,11 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QFrame,
     QSizePolicy,
+    QStyle,
 )
 from PyQt6.QtCore import Qt
+
+from ..utils.theme import Theme
 
 
 class ProgressDisplay(QWidget):
@@ -25,106 +28,113 @@ class ProgressDisplay(QWidget):
     def _setup_ui(self) -> None:
         """Set up the user interface."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 0, 0, 0)  # No margins - spacing handled by parent
+        layout.setSpacing(Theme.SPACING_SM)
 
-        # Progress container frame
+        # Progress container frame with card styling
         self.progress_frame = QFrame()
-        self.progress_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        self.progress_frame.setFrameShape(QFrame.Shape.NoFrame)
         self.progress_frame.setStyleSheet(
-            """
-            QFrame {
-                background-color: #f5f5f5;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 20px;
-            }
+            f"""
+            QFrame {{
+                background-color: {Theme.BACKGROUND_PRIMARY};
+                border: 1px solid {Theme.BORDER_LIGHT};
+                border-radius: {Theme.RADIUS_LG}px;
+                padding: {Theme.SPACING_LG}px;
+            }}
             """
         )
 
         frame_layout = QVBoxLayout(self.progress_frame)
-        frame_layout.setSpacing(12)
+        frame_layout.setSpacing(Theme.SPACING_MD)
 
-        # Status message label
+        # Status/Stage message at top
+        status_layout = QHBoxLayout()
+
         self.status_label = QLabel("Preparing...")
         self.status_label.setStyleSheet(
-            """
-            QLabel {
-                font-size: 14px;
-                font-weight: bold;
-                color: #333;
-            }
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                color: {Theme.TEXT_PRIMARY};
+            }}
             """
         )
-        frame_layout.addWidget(self.status_label)
+        status_layout.addWidget(self.status_label)
 
-        # Progress bar
+        status_layout.addStretch()
+
+        # Percentage inline with status
+        self.percentage_label = QLabel("0%")
+        self.percentage_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: {Theme.FONT_WEIGHT_BOLD};
+                color: {Theme.PRIMARY};
+            }}
+            """
+        )
+        status_layout.addWidget(self.percentage_label)
+
+        frame_layout.addLayout(status_layout)
+
+        # Progress bar - modern slim design
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(100)
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(False)
-        self.progress_bar.setMinimumHeight(25)
+        self.progress_bar.setFixedHeight(8)  # Slim progress bar
         self.progress_bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: 2px solid #ddd;
-                border-radius: 5px;
-                background-color: #fff;
-                text-align: center;
-            }
-            QProgressBar::chunk {
-                background-color: #4CAF50;
-                border-radius: 3px;
-            }
+            f"""
+            QProgressBar {{
+                border: none;
+                border-radius: 4px;
+                background-color: {Theme.BORDER_LIGHT};
+            }}
+            QProgressBar::chunk {{
+                background-color: {Theme.PRIMARY};
+                border-radius: 4px;
+            }}
             """
         )
         frame_layout.addWidget(self.progress_bar)
 
-        # Info row (percentage and ETA)
-        info_layout = QHBoxLayout()
-
-        # Percentage label
-        self.percentage_label = QLabel("0%")
-        self.percentage_label.setStyleSheet(
-            """
-            QLabel {
-                font-size: 13px;
-                font-weight: bold;
-                color: #4CAF50;
-            }
-            """
-        )
-        info_layout.addWidget(self.percentage_label)
-
-        info_layout.addStretch()
-
-        # ETA label
-        self.eta_label = QLabel("")
-        self.eta_label.setStyleSheet(
-            """
-            QLabel {
-                font-size: 12px;
-                color: #666;
-            }
-            """
-        )
-        info_layout.addWidget(self.eta_label)
-
-        frame_layout.addLayout(info_layout)
+        # Bottom row (stage and ETA)
+        bottom_layout = QHBoxLayout()
 
         # Stage details label
         self.stage_label = QLabel("")
         self.stage_label.setWordWrap(True)
         self.stage_label.setStyleSheet(
-            """
-            QLabel {
-                font-size: 11px;
-                color: #888;
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_SM}px;
+                color: {Theme.TEXT_SECONDARY};
                 font-style: italic;
-            }
+            }}
             """
         )
-        frame_layout.addWidget(self.stage_label)
+        bottom_layout.addWidget(self.stage_label)
+
+        bottom_layout.addStretch()
+
+        # ETA label with clock icon
+        self.eta_label = QLabel("")
+        self.eta_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_SM}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                color: {Theme.TEXT_SECONDARY};
+            }}
+            """
+        )
+        bottom_layout.addWidget(self.eta_label)
+
+        frame_layout.addLayout(bottom_layout)
 
         layout.addWidget(self.progress_frame)
 
@@ -151,36 +161,14 @@ class ProgressDisplay(QWidget):
         else:
             self.stage_label.setText("")
 
-        # Update ETA
+        # Update ETA with clock icon
         if eta_seconds is not None and eta_seconds > 0 and percent < 100:
             eta_text = self._format_eta(eta_seconds)
-            self.eta_label.setText(f"ETA: {eta_text}")
+            self.eta_label.setText(f"🕐 {eta_text}")
         elif percent >= 100:
-            self.eta_label.setText("Complete!")
+            self.eta_label.setText("✓ Complete!")
         else:
             self.eta_label.setText("")
-
-        # Change colors based on progress
-        if percent >= 100:
-            self.percentage_label.setStyleSheet(
-                """
-                QLabel {
-                    font-size: 13px;
-                    font-weight: bold;
-                    color: #2e7d32;
-                }
-                """
-            )
-        elif percent >= 80:
-            self.percentage_label.setStyleSheet(
-                """
-                QLabel {
-                    font-size: 13px;
-                    font-weight: bold;
-                    color: #689F38;
-                }
-                """
-            )
 
     def _format_stage(self, stage: str) -> str:
         """Format stage name for display."""
@@ -226,16 +214,16 @@ class ProgressDisplay(QWidget):
         self.percentage_label.setText("100%")
         self.status_label.setText("✓ Processing Complete!")
         self.stage_label.setText("")
-        self.eta_label.setText("Complete!")
+        self.eta_label.setText("✓ Complete!")
 
         # Update styling for completion
         self.status_label.setStyleSheet(
-            """
-            QLabel {
-                font-size: 14px;
-                font-weight: bold;
-                color: #2e7d32;
-            }
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                color: {Theme.SUCCESS};
+            }}
             """
         )
 
@@ -243,12 +231,12 @@ class ProgressDisplay(QWidget):
         """Update display to show error."""
         self.status_label.setText(f"✗ Error: {error_message}")
         self.status_label.setStyleSheet(
-            """
-            QLabel {
-                font-size: 14px;
-                font-weight: bold;
-                color: #c62828;
-            }
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                color: {Theme.ERROR};
+            }}
             """
         )
         self.stage_label.setText("")

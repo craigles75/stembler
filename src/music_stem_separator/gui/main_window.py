@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QMessageBox,
     QMenuBar,
+    QFrame,
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
@@ -26,6 +27,7 @@ from .utils.credential_utils import (
     get_credential_setup_instructions,
 )
 from .utils.version import get_version
+from .utils.theme import Theme
 from .models import AudioInput, InputType, UserSettings
 
 
@@ -51,6 +53,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"Stembler v{version} - Music Stem Separator")
         self.setMinimumSize(700, 600)
 
+        # Apply window background color
+        self.setStyleSheet(
+            f"QMainWindow {{ background-color: {Theme.BACKGROUND_PRIMARY}; }}"
+        )
+
         # Create menu bar
         self._create_menu_bar()
 
@@ -59,29 +66,49 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         layout = QVBoxLayout(central_widget)
-        layout.setSpacing(20)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(Theme.SPACING_LG)  # 24px vertical spacing
+        layout.setContentsMargins(
+            Theme.SPACING_XL,  # 32px left
+            Theme.SPACING_XL,  # 32px top
+            Theme.SPACING_XL,  # 32px right
+            Theme.SPACING_XL,  # 32px bottom
+        )
 
         # Header
         header_label = QLabel("Music Stem Separator")
         header_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         header_label.setStyleSheet(
-            """
-            QLabel {
-                font-size: 24px;
-                font-weight: bold;
-                color: #333;
-                padding: 10px;
-            }
+            f"""
+            QLabel {{
+                font-size: 28px;
+                font-weight: {Theme.FONT_WEIGHT_BOLD};
+                color: {Theme.TEXT_PRIMARY};
+                letter-spacing: {Theme.LETTER_SPACING_TIGHT};
+                padding: {Theme.SPACING_SM}px;
+            }}
             """
         )
         layout.addWidget(header_label)
 
-        subtitle_label = QLabel("Separate your audio into drums, bass, vocals, and other instruments")
+        subtitle_label = QLabel(
+            "Separate your audio into drums, bass, vocals, and other instruments"
+        )
         subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle_label.setWordWrap(True)
-        subtitle_label.setStyleSheet("color: #666; font-size: 13px; padding-bottom: 10px;")
+        subtitle_label.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.FONT_SIZE_SM}px;
+                padding-bottom: {Theme.SPACING_SM}px;
+            }}
+            """
+        )
         layout.addWidget(subtitle_label)
+
+        # Separator line after header
+        separator1 = self._create_separator()
+        layout.addWidget(separator1)
 
         # File input widget
         self.file_input = FileInputWidget()
@@ -374,6 +401,23 @@ class MainWindow(QMainWindow):
         msg_box.setInformativeText("Spotify URLs require API credentials to download tracks.")
         msg_box.setDetailedText(instructions)
         msg_box.exec()
+
+    def _create_separator(self) -> QFrame:
+        """Create a subtle horizontal separator line."""
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Plain)
+        separator.setLineWidth(1)
+        separator.setStyleSheet(
+            f"""
+            QFrame {{
+                color: {Theme.BORDER_LIGHT};
+                margin-top: {Theme.SPACING_SM}px;
+                margin-bottom: {Theme.SPACING_SM}px;
+            }}
+            """
+        )
+        return separator
 
     def closeEvent(self, event) -> None:
         """Handle window close event."""

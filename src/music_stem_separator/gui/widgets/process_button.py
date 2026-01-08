@@ -1,7 +1,9 @@
 """Process button widget for initiating stem separation."""
 
-from PyQt6.QtWidgets import QPushButton
+from PyQt6.QtWidgets import QPushButton, QStyle
 from PyQt6.QtCore import pyqtSignal
+
+from ..utils.theme import Theme
 
 
 class ProcessButton(QPushButton):
@@ -19,7 +21,7 @@ class ProcessButton(QPushButton):
         self._is_enabled_for_processing = False
 
         self.clicked.connect(self._on_clicked)
-        self.setMinimumHeight(40)
+        self.setMinimumHeight(Theme.BUTTON_HEIGHT_LG)  # 48px
         self._update_appearance()
 
     def _on_clicked(self) -> None:
@@ -42,62 +44,41 @@ class ProcessButton(QPushButton):
     def _update_appearance(self) -> None:
         """Update button appearance based on state."""
         if self._is_processing:
-            self.setText("Cancel")
+            # Cancel state - red button with stop icon
+            self.setText("  Cancel")
+            cancel_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserStop)
+            self.setIcon(cancel_icon)
             self.setEnabled(True)
             self.setStyleSheet(
-                """
-                QPushButton {
-                    background-color: #f44336;
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 14px;
-                    font-weight: bold;
-                    padding: 10px;
-                }
-                QPushButton:hover {
-                    background-color: #d32f2f;
-                }
-                QPushButton:pressed {
-                    background-color: #b71c1c;
-                }
-                """
+                Theme.button_style(
+                    Theme.ERROR,
+                    "#D32F2F",  # Darker red on hover
+                    "#B71C1C",  # Even darker on press
+                )
             )
         elif self._is_enabled_for_processing:
-            self.setText("Separate Stems")
+            # Ready state - Spotify green button with play icon
+            self.setText("  Separate Stems")
+            play_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay)
+            self.setIcon(play_icon)
             self.setEnabled(True)
             self.setStyleSheet(
-                """
-                QPushButton {
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 14px;
-                    font-weight: bold;
-                    padding: 10px;
-                }
-                QPushButton:hover {
-                    background-color: #45a049;
-                }
-                QPushButton:pressed {
-                    background-color: #3d8b40;
-                }
-                """
+                Theme.button_style(
+                    Theme.PRIMARY,
+                    Theme.PRIMARY_HOVER,
+                    Theme.PRIMARY_PRESSED,
+                )
             )
         else:
+            # Disabled state - no icon
             self.setText("Separate Stems")
+            self.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_CustomBase))  # Empty icon
             self.setEnabled(False)
             self.setStyleSheet(
-                """
-                QPushButton {
-                    background-color: #ccc;
-                    color: #666;
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 14px;
-                    font-weight: bold;
-                    padding: 10px;
-                }
-                """
+                Theme.button_style(
+                    Theme.BORDER_LIGHT,
+                    Theme.BORDER_LIGHT,
+                    Theme.BORDER_LIGHT,
+                    text_color=Theme.TEXT_DISABLED,
+                )
             )

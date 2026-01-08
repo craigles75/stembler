@@ -8,11 +8,13 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QFileDialog,
+    QStyle,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QIcon
 
 from ..models import AudioInput
+from ..utils.theme import Theme
 
 
 class FileInputWidget(QWidget):
@@ -33,25 +35,32 @@ class FileInputWidget(QWidget):
     def _setup_ui(self) -> None:
         """Set up the user interface."""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)  # No margins - spacing handled by parent
+        layout.setSpacing(Theme.SPACING_MD)
 
-        # Drag-drop area
-        self.drop_label = QLabel("Drag and drop an audio file here")
+        # Drag-drop area with icon and text
+        self.drop_label = QLabel(
+            "📁\n\nDrag and drop an audio file here\n"
+            f"<small><font color='{Theme.TEXT_TERTIARY}'>or paste a Spotify URL</font></small>"
+        )
         self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.drop_label.setMinimumHeight(150)
+        self.drop_label.setTextFormat(Qt.TextFormat.RichText)
+        self.drop_label.setMinimumHeight(180)
         self.drop_label.setStyleSheet(
-            """
-            QLabel {
-                border: 2px dashed #aaa;
-                border-radius: 8px;
-                background-color: #f9f9f9;
-                color: #666;
-                font-size: 14px;
-                padding: 20px;
-            }
-            QLabel:hover {
-                border-color: #666;
-                background-color: #f0f0f0;
-            }
+            f"""
+            QLabel {{
+                border: 2px dashed {Theme.BORDER_MEDIUM};
+                border-radius: 12px;
+                background-color: #FAFBFC;
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.FONT_SIZE_MD}px;
+                padding: {Theme.SPACING_LG}px;
+                qproperty-alignment: AlignCenter;
+            }}
+            QLabel:hover {{
+                border-color: {Theme.BORDER_DARK};
+                background-color: #F5F7FA;
+            }}
             """
         )
         layout.addWidget(self.drop_label)
@@ -59,19 +68,40 @@ class FileInputWidget(QWidget):
         # OR separator
         separator_label = QLabel("— OR —")
         separator_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        separator_label.setStyleSheet("color: #999; margin: 10px 0;")
+        separator_label.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.TEXT_TERTIARY};
+                font-size: {Theme.FONT_SIZE_SM}px;
+                margin: {Theme.SPACING_MD}px 0;
+            }}
+            """
+        )
         layout.addWidget(separator_label)
 
         # File path input row
         input_layout = QHBoxLayout()
+        input_layout.setSpacing(Theme.SPACING_SM)
 
         self.path_input = QLineEdit()
         self.path_input.setPlaceholderText("Enter file path or URL...")
         self.path_input.textChanged.connect(self._on_path_changed)
+        self.path_input.setStyleSheet(Theme.input_style())
         input_layout.addWidget(self.path_input, stretch=1)
 
-        self.browse_button = QPushButton("Browse...")
+        # Browse button with folder icon
+        self.browse_button = QPushButton("  Browse...")
+        folder_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon)
+        self.browse_button.setIcon(folder_icon)
         self.browse_button.clicked.connect(self._on_browse_clicked)
+        self.browse_button.setStyleSheet(
+            Theme.button_style(
+                Theme.SECONDARY,
+                Theme.SECONDARY_HOVER,
+                Theme.SECONDARY_PRESSED,
+                height=Theme.INPUT_HEIGHT,
+            )
+        )
         input_layout.addWidget(self.browse_button)
 
         layout.addLayout(input_layout)
@@ -79,14 +109,33 @@ class FileInputWidget(QWidget):
         # Validation message label
         self.validation_label = QLabel("")
         self.validation_label.setWordWrap(True)
-        self.validation_label.setStyleSheet("color: #c00; margin-top: 5px;")
+        self.validation_label.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.ERROR};
+                font-size: {Theme.FONT_SIZE_SM}px;
+                padding: {Theme.SPACING_SM}px;
+                margin-top: {Theme.SPACING_SM}px;
+            }}
+            """
+        )
         self.validation_label.hide()
         layout.addWidget(self.validation_label)
 
         # File info label (shows when valid)
         self.info_label = QLabel("")
         self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet("color: #060; margin-top: 5px;")
+        self.info_label.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.SUCCESS};
+                font-size: {Theme.FONT_SIZE_SM}px;
+                font-weight: {Theme.FONT_WEIGHT_MEDIUM};
+                padding: {Theme.SPACING_SM}px;
+                margin-top: {Theme.SPACING_SM}px;
+            }}
+            """
+        )
         self.info_label.hide()
         layout.addWidget(self.info_label)
 
@@ -100,16 +149,18 @@ class FileInputWidget(QWidget):
         """Handle drag enter event."""
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
+            # Active/dragging state with thicker border and green tint
             self.drop_label.setStyleSheet(
-                """
-                QLabel {
-                    border: 2px solid #4CAF50;
-                    border-radius: 8px;
-                    background-color: #e8f5e9;
-                    color: #2e7d32;
-                    font-size: 14px;
-                    padding: 20px;
-                }
+                f"""
+                QLabel {{
+                    border: 3px solid {Theme.PRIMARY};
+                    border-radius: 12px;
+                    background-color: #F0F9F4;
+                    color: {Theme.PRIMARY};
+                    font-size: {Theme.FONT_SIZE_MD}px;
+                    font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                    padding: {Theme.SPACING_LG}px;
+                }}
                 """
             )
 
@@ -132,19 +183,19 @@ class FileInputWidget(QWidget):
     def _reset_drop_label_style(self) -> None:
         """Reset drop label to default style."""
         self.drop_label.setStyleSheet(
-            """
-            QLabel {
-                border: 2px dashed #aaa;
-                border-radius: 8px;
-                background-color: #f9f9f9;
-                color: #666;
-                font-size: 14px;
-                padding: 20px;
-            }
-            QLabel:hover {
-                border-color: #666;
-                background-color: #f0f0f0;
-            }
+            f"""
+            QLabel {{
+                border: 2px dashed {Theme.BORDER_MEDIUM};
+                border-radius: 12px;
+                background-color: #FAFBFC;
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.FONT_SIZE_MD}px;
+                padding: {Theme.SPACING_LG}px;
+            }}
+            QLabel:hover {{
+                border-color: {Theme.BORDER_DARK};
+                background-color: #F5F7FA;
+            }}
             """
         )
 
@@ -195,29 +246,34 @@ class FileInputWidget(QWidget):
             track_info = self._current_input.get_spotify_preview_info()
             if track_info:
                 track_name, artist = track_info
-                info_text = f"✓ Spotify Track: {track_name} (ID: {artist})"
-                drop_text = f"🎵 Spotify: {track_name}"
+                info_text = f"✓ Spotify Track: {track_name} by {artist}"
+                drop_text = f"🎵  {track_name}\n<small><font color='{Theme.SUCCESS}'>by {artist}</font></small>"
             else:
                 info_text = f"✓ Valid {input_type}"
                 drop_text = "🎵 Spotify Track"
         else:
             info_text = f"✓ Valid {input_type}: {display_name}"
-            drop_text = f"Selected: {display_name}"
+            drop_text = f"✓  {display_name}"
 
         self.info_label.setText(info_text)
         self.info_label.show()
 
         self.drop_label.setText(drop_text)
+        # Valid input state with card appearance and left border accent
+        # Maintain minimum height to prevent layout shift
         self.drop_label.setStyleSheet(
-            """
-            QLabel {
-                border: 2px solid #4CAF50;
-                border-radius: 8px;
-                background-color: #e8f5e9;
-                color: #2e7d32;
-                font-size: 14px;
-                padding: 20px;
-            }
+            f"""
+            QLabel {{
+                border: 1px solid {Theme.BORDER_LIGHT};
+                border-left: 4px solid {Theme.SUCCESS};
+                border-radius: 10px;
+                background-color: {Theme.SUCCESS_LIGHT};
+                color: {Theme.SUCCESS};
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                padding: {Theme.SPACING_LG}px;
+                min-height: 180px;
+            }}
             """
         )
 
@@ -229,14 +285,20 @@ class FileInputWidget(QWidget):
         )
         self.validation_label.show()
         self._reset_drop_label_style()
-        self.drop_label.setText("Drag and drop an audio file here")
+        self.drop_label.setText(
+            "📁\n\nDrag and drop an audio file here\n"
+            f"<small><font color='{Theme.TEXT_TERTIARY}'>or paste a Spotify URL</font></small>"
+        )
 
     def _clear_validation(self) -> None:
         """Clear validation state."""
         self.validation_label.hide()
         self.info_label.hide()
         self._reset_drop_label_style()
-        self.drop_label.setText("Drag and drop an audio file here")
+        self.drop_label.setText(
+            "📁\n\nDrag and drop an audio file here\n"
+            f"<small><font color='{Theme.TEXT_TERTIARY}'>or paste a Spotify URL</font></small>"
+        )
         self._current_input = None
 
     def get_path(self) -> str:
