@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QProgressBar,
     QFrame,
+    QSizePolicy,
 )
 from PyQt6.QtCore import Qt
 
@@ -17,6 +18,8 @@ class ProgressDisplay(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_ui()
+        # Set size policy to collapse when hidden
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         self.hide()  # Hidden by default until processing starts
 
     def _setup_ui(self) -> None:

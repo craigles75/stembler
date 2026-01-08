@@ -44,7 +44,7 @@ class SpotifyHandler:
         self.settings = {
             "output_format": output_format,
             "bitrate": quality,
-            "audio_providers": ["youtube", "soundcloud"],  # Use YouTube and SoundCloud with fallback
+            "audio_providers": ["youtube-music"],  # Use YouTube Music (SoundCloud is broken due to API changes)
         }
 
         logger.info(

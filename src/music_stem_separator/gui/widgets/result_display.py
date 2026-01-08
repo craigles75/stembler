@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
     QFrame,
+    QSizePolicy,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 
@@ -23,6 +24,8 @@ class ResultDisplay(QWidget):
         super().__init__(parent)
         self._output_bundle: OutputBundle | None = None
         self._setup_ui()
+        # Set size policy to collapse when hidden
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         self.hide()  # Hidden by default until there are results
 
     def _setup_ui(self) -> None:
