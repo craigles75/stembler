@@ -4,6 +4,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 from .gui.main_window import MainWindow
+from .gui.utils.error_handler import install_error_handler
 
 
 def main():
@@ -17,6 +18,10 @@ def main():
 
     # Create and show main window
     window = MainWindow()
+
+    # Install global error handler (with main window as parent for dialogs)
+    install_error_handler(parent=window)
+
     window.show()
 
     # Run application event loop

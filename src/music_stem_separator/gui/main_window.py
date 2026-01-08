@@ -17,6 +17,7 @@ from .widgets.process_button import ProcessButton
 from .widgets.progress_display import ProgressDisplay
 from .widgets.result_display import ResultDisplay
 from .widgets.settings_panel import SettingsPanel
+from .widgets.about_dialog import AboutDialog
 from .controllers.processing_controller import ProcessingController
 from .controllers.settings_controller import SettingsController
 from .utils.progress_tracker import ProgressTracker
@@ -24,6 +25,7 @@ from .utils.credential_utils import (
     check_spotify_credentials,
     get_credential_setup_instructions,
 )
+from .utils.version import get_version
 from .models import AudioInput, InputType, UserSettings
 
 
@@ -45,7 +47,8 @@ class MainWindow(QMainWindow):
 
     def _setup_ui(self) -> None:
         """Set up the user interface."""
-        self.setWindowTitle("Stembler - Music Stem Separator")
+        version = get_version()
+        self.setWindowTitle(f"Stembler v{version} - Music Stem Separator")
         self.setMinimumSize(700, 600)
 
         # Create menu bar
@@ -118,6 +121,14 @@ class MainWindow(QMainWindow):
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
+
+        # Help menu
+        help_menu = menu_bar.addMenu("&Help")
+
+        # About action
+        about_action = QAction("&About Stembler", self)
+        about_action.triggered.connect(self._on_about_clicked)
+        help_menu.addAction(about_action)
 
     def _connect_signals(self) -> None:
         """Connect signals and slots."""
@@ -227,6 +238,11 @@ class MainWindow(QMainWindow):
                 "Failed to save settings. Please try again.",
             )
 
+    def _on_about_clicked(self) -> None:
+        """Handle about menu click."""
+        about_dialog = AboutDialog(self)
+        about_dialog.exec()
+
     def _on_processing_started(self) -> None:
         """Handle processing start."""
         self.process_button.set_processing(True)
@@ -250,7 +266,8 @@ class MainWindow(QMainWindow):
     def _on_progress_updated(self, percent: int, message: str, stage: str) -> None:
         """Handle progress update."""
         # Update window title with progress
-        self.setWindowTitle(f"Stembler - Processing: {percent}%")
+        version = get_version()
+        self.setWindowTitle(f"Stembler v{version} - Processing: {percent}%")
 
         # Update progress tracker
         if self._progress_tracker:
@@ -267,7 +284,8 @@ class MainWindow(QMainWindow):
         self.process_button.set_processing(False)
         self.process_button.set_ready_to_process(True)
         self.file_input.set_enabled(True)
-        self.setWindowTitle("Stembler - Music Stem Separator")
+        version = get_version()
+        self.setWindowTitle(f"Stembler v{version} - Music Stem Separator")
 
         # Update progress display to show completion
         self.progress_display.complete_processing()
@@ -294,7 +312,8 @@ class MainWindow(QMainWindow):
         self.process_button.set_processing(False)
         self.process_button.set_ready_to_process(True)
         self.file_input.set_enabled(True)
-        self.setWindowTitle("Stembler - Music Stem Separator")
+        version = get_version()
+        self.setWindowTitle(f"Stembler v{version} - Music Stem Separator")
 
         # Update progress display to show error
         self.progress_display.error_processing(error_message)
@@ -308,7 +327,8 @@ class MainWindow(QMainWindow):
         self.process_button.set_processing(False)
         self.process_button.set_ready_to_process(True)
         self.file_input.set_enabled(True)
-        self.setWindowTitle("Stembler - Music Stem Separator")
+        version = get_version()
+        self.setWindowTitle(f"Stembler v{version} - Music Stem Separator")
 
         # Reset progress display
         self.progress_display.reset()

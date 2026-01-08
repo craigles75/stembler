@@ -14,7 +14,11 @@ AI-powered music stem separation tool that extracts drums, bass, vocals, and oth
 - **🎛️ Audio Enhancement**: Optional post-processing for improved quality
 - **📁 Smart Output Organization**: Automatically organizes stems with metadata
 - **⚡ High Performance**: GPU acceleration support for faster processing
-- **🖥️ Desktop GUI**: User-friendly drag-and-drop interface for non-technical users
+- **🖥️ Desktop GUI**: User-friendly drag-and-drop interface with:
+  - Visual progress tracking with ETA
+  - Persistent settings (model selection, output directory, Spotify credentials)
+  - Error logging and user-friendly error messages
+  - Cancellation support during processing
 - **🔧 CLI Interface**: Powerful command-line tool for automation and scripting
 - **🔀 Dual Interface**: GUI and CLI work independently - use whichever suits your workflow
 
@@ -54,9 +58,16 @@ uv run stem-separator-gui
 
 Then simply:
 1. **Drag and drop** an audio file onto the window, or click "Browse" to select one
-2. Click **"Separate Stems"** to start processing
-3. Wait for completion (progress shown in window title)
-4. Click **"Open Output Folder"** to view your separated stems
+2. **Optional**: Configure settings via File → Settings (model, output directory, Spotify credentials)
+3. Click **"Separate Stems"** to start processing
+4. Watch real-time progress with ETA and stage information
+5. Click **"Open Output Folder"** to view your separated stems
+
+**GUI Features**:
+- **Settings Panel** (File → Settings): Configure model, output directory, enhancement, and Spotify credentials
+- **About Dialog** (Help → About): View version info and credits
+- **Error Logging**: Automatic error logging to `~/.config/Stembler/logs/` (or platform equivalent)
+- **Cancel Processing**: Click "Cancel" during processing to safely stop
 
 #### Command Line Interface (For automation & scripting)
 
@@ -92,11 +103,12 @@ Both interfaces provide the same core functionality, but work **completely indep
 |---------|---------------------------|------------------------|
 | **Best For** | Non-technical users, visual feedback | Automation, scripting, batch processing |
 | **Input Method** | Drag-and-drop or Browse button | Command-line arguments |
-| **Progress Display** | Visual progress bar and messages | Optional verbose output |
-| **Settings** | Persistent GUI settings (future) | Command-line flags only |
-| **Output Location** | `~/Music/Stembler Output` (default) | `./output` or custom via `--output` |
-| **Model Selection** | Via settings panel (future) | Via `--model` flag |
-| **Processing** | Background thread (non-blocking) | Foreground (blocks terminal) |
+| **Progress Display** | Visual progress bar with ETA | Optional verbose output |
+| **Settings** | Persistent settings panel (model, output dir, credentials) | Command-line flags only |
+| **Output Location** | `~/Music/Stembler Output` (default, customizable) | `./output` or custom via `--output` |
+| **Model Selection** | Via Settings panel (File → Settings) | Via `--model` flag |
+| **Processing** | Background thread with cancel support | Foreground (blocks terminal) |
+| **Error Handling** | User-friendly dialogs + log files | Stack traces to console |
 
 **Key Point**: GUI and CLI use **separate, independent configurations**. Your CLI command-line preferences never affect GUI behavior, and vice versa. Both can be used on the same system without conflicts.
 
@@ -190,15 +202,24 @@ stembler/
 │   │   ├── models/                 # Data models
 │   │   │   ├── audio_input.py      # Input validation
 │   │   │   ├── processing_job.py   # Job tracking
-│   │   │   └── output_bundle.py    # Output management
+│   │   │   ├── output_bundle.py    # Output management
+│   │   │   └── user_settings.py    # User preferences
 │   │   ├── widgets/                # UI components
 │   │   │   ├── file_input.py       # Drag-drop input
 │   │   │   ├── process_button.py   # Action button
-│   │   │   └── result_display.py   # Results view
+│   │   │   ├── progress_display.py # Progress tracking
+│   │   │   ├── result_display.py   # Results view
+│   │   │   ├── settings_panel.py   # Settings dialog
+│   │   │   └── about_dialog.py     # About dialog
 │   │   ├── controllers/            # Business logic
-│   │   │   └── processing_controller.py
+│   │   │   ├── processing_controller.py
+│   │   │   └── settings_controller.py
 │   │   └── utils/                  # Helper functions
-│   │       └── platform_utils.py   # Cross-platform utilities
+│   │       ├── platform_utils.py   # Cross-platform utilities
+│   │       ├── error_handler.py    # Global error handling
+│   │       ├── progress_tracker.py # ETA estimation
+│   │       ├── settings_manager.py # Settings persistence
+│   │       └── version.py          # Version utilities
 │   ├── input_processor.py          # Input validation & routing
 │   ├── separator.py                # Core Demucs wrapper
 │   ├── spotify_handler.py          # Spotify download
