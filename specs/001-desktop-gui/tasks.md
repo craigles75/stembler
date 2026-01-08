@@ -243,21 +243,21 @@ Each user story phase can be tested independently without requiring other phases
 
 ### Error Handling
 
-- [ ] T069 [P] Implement global exception handler for uncaught errors
-- [ ] T070 [P] Add error logging to file in platform-specific log directory
-- [ ] T071 [P] Replace technical stack traces with user-friendly error dialogs
+- [X] T069 [P] Implement global exception handler for uncaught errors
+- [X] T070 [P] Add error logging to file in platform-specific log directory
+- [X] T071 [P] Replace technical stack traces with user-friendly error dialogs
 
 ### Cancellation Support
 
-- [ ] T072 [P] Add "Cancel" button to MainWindow during processing
-- [ ] T073 [P] Implement CancellationToken in processing_controller.py
-- [ ] T074 [P] Test cancellation mid-processing (cleanup temp files, return to ready state)
+- [X] T072 [P] Add "Cancel" button to MainWindow during processing
+- [X] T073 [P] Implement CancellationToken in processing_controller.py
+- [X] T074 [P] Test cancellation mid-processing (cleanup temp files, return to ready state)
 
 ### Application Metadata
 
-- [ ] T075 [P] Add "About" dialog with version, license, and credits
+- [X] T075 [P] Add "About" dialog with version, license, and credits
 - [ ] T076 [P] Set application icon for macOS (.icns) and Windows (.ico)
-- [ ] T077 [P] Set window title to "Stembler v{version}"
+- [X] T077 [P] Set window title to "Stembler v{version}"
 
 ### Packaging - macOS
 
@@ -275,9 +275,9 @@ Each user story phase can be tested independently without requiring other phases
 
 ### Documentation
 
-- [ ] T086 [P] Update README.md with GUI installation and usage instructions
+- [X] T086 [P] Update README.md with GUI installation and usage instructions
 - [ ] T087 [P] Add GUI screenshots to README.md
-- [ ] T088 [P] Update CLAUDE.md with GUI architecture details
+- [X] T088 [P] Update CLAUDE.md with GUI architecture details
 - [ ] T089 [P] Create PACKAGING.md with build instructions for both platforms
 
 ---
