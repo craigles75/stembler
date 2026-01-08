@@ -6,21 +6,25 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QMessageBox,
+    QMenuBar,
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction
 from pathlib import Path
 
 from .widgets.file_input import FileInputWidget
 from .widgets.process_button import ProcessButton
 from .widgets.progress_display import ProgressDisplay
 from .widgets.result_display import ResultDisplay
+from .widgets.settings_panel import SettingsPanel
 from .controllers.processing_controller import ProcessingController
+from .controllers.settings_controller import SettingsController
 from .utils.progress_tracker import ProgressTracker
 from .utils.credential_utils import (
     check_spotify_credentials,
     get_credential_setup_instructions,
 )
-from .models import AudioInput, InputType
+from .models import AudioInput, InputType, UserSettings
 
 
 class MainWindow(QMainWindow):
@@ -29,8 +33,12 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self._controller = ProcessingController()
+        self._settings_controller = SettingsController()
         self._current_audio_input: AudioInput | None = None
         self._progress_tracker: ProgressTracker | None = None
+
+        # Load settings on startup
+        self._current_settings = self._settings_controller.load_settings()
 
         self._setup_ui()
         self._connect_signals()
@@ -39,6 +47,9 @@ class MainWindow(QMainWindow):
         """Set up the user interface."""
         self.setWindowTitle("Stembler - Music Stem Separator")
         self.setMinimumSize(700, 600)
+
+        # Create menu bar
+        self._create_menu_bar()
 
         # Central widget
         central_widget = QWidget()
@@ -87,6 +98,27 @@ class MainWindow(QMainWindow):
 
         layout.addStretch()
 
+    def _create_menu_bar(self) -> None:
+        """Create the application menu bar."""
+        menu_bar = self.menuBar()
+
+        # File menu
+        file_menu = menu_bar.addMenu("&File")
+
+        # Settings action
+        settings_action = QAction("&Settings...", self)
+        settings_action.setShortcut("Ctrl+,")
+        settings_action.triggered.connect(self._on_settings_clicked)
+        file_menu.addAction(settings_action)
+
+        file_menu.addSeparator()
+
+        # Exit action
+        exit_action = QAction("E&xit", self)
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
     def _connect_signals(self) -> None:
         """Connect signals and slots."""
         # File input signals
@@ -132,16 +164,16 @@ class MainWindow(QMainWindow):
                 self._show_spotify_setup_dialog(error_msg)
                 return
 
-        # Get default output directory (user's Music folder / Stembler Output)
-        output_dir = self._get_default_output_dir()
+        # Get output directory from settings
+        output_dir = self._current_settings.get_output_directory()
 
-        # Start processing
+        # Start processing with settings
         success = self._controller.start_processing(
             audio_input=self._current_audio_input,
             output_dir=str(output_dir),
-            model_name="htdemucs",
-            device=None,
-            enable_enhancement=True,
+            model_name=self._current_settings.model_name,
+            device=self._current_settings.device,
+            enable_enhancement=self._current_settings.enable_enhancement,
         )
 
         if not success:
@@ -166,6 +198,35 @@ class MainWindow(QMainWindow):
         # This is just for logging or additional actions if needed
         pass
 
+    def _on_settings_clicked(self) -> None:
+        """Handle settings menu click."""
+        # Create and show settings dialog
+        settings_dialog = SettingsPanel(self._current_settings, self)
+        settings_dialog.settings_changed.connect(self._on_settings_changed)
+
+        if settings_dialog.exec():
+            # Settings were saved (user clicked Save)
+            pass
+
+    def _on_settings_changed(self, new_settings: UserSettings) -> None:
+        """Handle settings change."""
+        # Save settings to file
+        success = self._settings_controller.save_settings(new_settings)
+        if success:
+            self._current_settings = new_settings
+            QMessageBox.information(
+                self,
+                "Settings Saved",
+                "Your settings have been saved successfully.\n\n"
+                "New settings will be applied to the next processing job.",
+            )
+        else:
+            QMessageBox.warning(
+                self,
+                "Save Failed",
+                "Failed to save settings. Please try again.",
+            )
+
     def _on_processing_started(self) -> None:
         """Handle processing start."""
         self.process_button.set_processing(True)
@@ -174,7 +235,9 @@ class MainWindow(QMainWindow):
 
         # Create progress tracker for ETA estimation
         input_path = self._current_audio_input.path if self._current_audio_input else None
-        self._progress_tracker = ProgressTracker(model_name="htdemucs", file_path=input_path)
+        self._progress_tracker = ProgressTracker(
+            model_name=self._current_settings.model_name, file_path=input_path
+        )
         self._progress_tracker.start()
 
         # Show progress display (with download message for Spotify/URLs)

@@ -209,31 +209,31 @@ Each user story phase can be tested independently without requiring other phases
 
 ### Data Models (US4)
 
-- [ ] T053 [P] [US4] Create UserSettings model in src/music_stem_separator/gui/models/user_settings.py
-- [ ] T054 [P] [US4] Create JSONSettingsManager in src/music_stem_separator/gui/utils/settings_manager.py
+- [X] T053 [P] [US4] Create UserSettings model in src/music_stem_separator/gui/models/user_settings.py
+- [X] T054 [P] [US4] Create JSONSettingsManager in src/music_stem_separator/gui/utils/settings_manager.py
 
 ### Settings Panel UI (US4)
 
-- [ ] T055 [P] [US4] Create SettingsPanel widget in src/music_stem_separator/gui/widgets/settings_panel.py
-- [ ] T056 [P] [US4] Add model selection dropdown with descriptions
-- [ ] T057 [P] [US4] Add output directory picker with "Browse" button
-- [ ] T058 [P] [US4] Add enhancement enable/disable checkbox
-- [ ] T059 [P] [US4] Add Spotify credentials input fields (client ID and secret)
+- [X] T055 [P] [US4] Create SettingsPanel widget in src/music_stem_separator/gui/widgets/settings_panel.py
+- [X] T056 [P] [US4] Add model selection dropdown with descriptions
+- [X] T057 [P] [US4] Add output directory picker with "Browse" button
+- [X] T058 [P] [US4] Add enhancement enable/disable checkbox
+- [X] T059 [P] [US4] Add Spotify credentials input fields (client ID and secret)
 
 ### Settings Controller (US4)
 
-- [ ] T060 [US4] Create SettingsController in src/music_stem_separator/gui/controllers/settings_controller.py
-- [ ] T061 [US4] Implement settings load on app startup
-- [ ] T062 [US4] Implement settings save when user changes values
-- [ ] T063 [US4] Apply default settings on first run (Music/Stembler Output, htdemucs, enhancement on)
-- [ ] T064 [US4] Validate Spotify credentials when user clicks "Test Credentials" button
+- [X] T060 [US4] Create SettingsController in src/music_stem_separator/gui/controllers/settings_controller.py
+- [X] T061 [US4] Implement settings load on app startup
+- [X] T062 [US4] Implement settings save when user changes values
+- [X] T063 [US4] Apply default settings on first run (Music/Stembler Output, htdemucs, enhancement on)
+- [X] T064 [US4] Validate Spotify credentials when user clicks "Test Credentials" button
 
 ### Integration (US4)
 
-- [ ] T065 [US4] Add "Settings" menu item to MainWindow
-- [ ] T066 [US4] Open SettingsPanel dialog when menu item clicked
-- [ ] T067 [US4] Load settings on app startup and apply to ProcessingController
-- [ ] T068 [US4] Test settings persistence across app restarts
+- [X] T065 [US4] Add "Settings" menu item to MainWindow
+- [X] T066 [US4] Open SettingsPanel dialog when menu item clicked
+- [X] T067 [US4] Load settings on app startup and apply to ProcessingController
+- [X] T068 [US4] Test settings persistence across app restarts
 
 ---
 

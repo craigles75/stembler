@@ -3,6 +3,7 @@
 from .audio_input import AudioInput, InputType
 from .output_bundle import OutputBundle
 from .processing_job import ProcessingJob, JobStatus
+from .user_settings import UserSettings
 
 __all__ = [
     "AudioInput",
@@ -10,4 +11,5 @@ __all__ = [
     "OutputBundle",
     "ProcessingJob",
     "JobStatus",
+    "UserSettings",
 ]
