@@ -14,6 +14,14 @@ samples/
 output/
 .env
 
+# Audio files (test files only, not part of repository)
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.aac
+*.ogg
+
 # GUI-specific
 packaging/build/
 packaging/dist/
