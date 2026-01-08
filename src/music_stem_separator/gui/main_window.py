@@ -280,6 +280,18 @@ class MainWindow(QMainWindow):
             message,
         )
 
+    def _show_spotify_setup_dialog(self, error_msg: str) -> None:
+        """Show Spotify credential setup instructions."""
+        instructions = get_credential_setup_instructions()
+
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setWindowTitle("Spotify Credentials Required")
+        msg_box.setText(f"Cannot process Spotify URL: {error_msg}")
+        msg_box.setInformativeText("Spotify URLs require API credentials to download tracks.")
+        msg_box.setDetailedText(instructions)
+        msg_box.exec()
+
     def closeEvent(self, event) -> None:
         """Handle window close event."""
         if self._controller.is_processing():
