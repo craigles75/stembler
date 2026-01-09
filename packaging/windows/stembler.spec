@@ -59,7 +59,7 @@ hidden_imports += collect_submodules('demucs')
 
 # Analysis: Scan and collect all dependencies
 a = Analysis(
-    [str(src_path / 'music_stem_separator' / 'gui_main.py')],
+    [str(Path(SPECPATH) / 'launcher.py')],
     pathex=[str(src_path)],
     binaries=[],
     datas=gui_datas + pyqt6_datas + demucs_datas,

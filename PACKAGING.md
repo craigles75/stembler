@@ -244,6 +244,7 @@ xcrun stapler staple dist/Stembler.app
 4. Creates `dist/Stembler/Stembler.exe` and dependencies
 
 **Build options (in `stembler.spec`):**
+- Uses `packaging/windows/launcher.py` (absolute imports, PyInstaller-compatible)
 - Bundles all Python dependencies
 - Includes PyQt6, torch, demucs, spotdl
 - No console window (GUI mode)
@@ -391,6 +392,31 @@ datas=[
     ('path/to/data', 'destination_in_app'),
 ]
 ```
+
+### ImportError: attempted relative import with no known parent package
+
+**Problem:** Application crashes with:
+```
+File "gui_main.py" line 6
+ImportError: attempted relative import with no known parent package
+```
+
+**Root Cause:** PyInstaller cannot handle relative imports in the entry point script.
+
+**Solution:** The spec file has been updated to use `launcher.py` which uses absolute imports instead of `gui_main.py` with relative imports.
+
+**If you still see this error:**
+1. Make sure you're using the latest spec file:
+   - macOS: `packaging/macos/stembler.spec` (uses `packaging/macos/launcher.py`)
+   - Windows: `packaging/windows/stembler.spec` (uses `packaging/windows/launcher.py`)
+2. Clean and rebuild:
+   ```bash
+   # Delete old build
+   rm -rf build/ dist/
+
+   # Rebuild
+   pyinstaller packaging/macos/stembler.spec --clean
+   ```
 
 ### macOS: "App is Damaged" Error
 
