@@ -31,6 +31,9 @@ pyqt6_datas = collect_data_files('PyQt6')
 # Collect demucs model data if needed
 demucs_datas = collect_data_files('demucs', include_py_files=False)
 
+# Collect pykakasi data (needed by spotdl for Japanese text processing)
+pykakasi_datas = collect_data_files('pykakasi', include_py_files=False)
+
 # Hidden imports (packages not auto-detected)
 hidden_imports = [
     # PyQt6 modules
@@ -62,7 +65,7 @@ a = Analysis(
     [str(Path(SPECPATH) / 'launcher.py')],
     pathex=[str(src_path)],
     binaries=[],
-    datas=gui_datas + pyqt6_datas + demucs_datas,
+    datas=gui_datas + pyqt6_datas + demucs_datas + pykakasi_datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},

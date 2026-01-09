@@ -370,6 +370,30 @@ hidden_imports = [
 ]
 ```
 
+### FileNotFoundError: Missing Data Files
+
+**Problem:** Application crashes with:
+```
+FileNotFoundError: [Errno 2] No such file or directory: '..._internal\pykakasi\data\kanwadict4.db'
+```
+or similar errors for other data files.
+
+**Root Cause:** PyInstaller bundles Python code but sometimes misses non-Python data files (like `.db`, `.json`, `.dat` files) that packages need.
+
+**Solution:** Add to `datas` collection in spec file:
+```python
+# Collect data files from the package
+package_datas = collect_data_files('package_name', include_py_files=False)
+
+# Then add to Analysis datas parameter:
+datas=gui_datas + pyqt6_datas + demucs_datas + package_datas,
+```
+
+**Already included:**
+- `pykakasi` - Japanese text processing data (for spotdl)
+- `demucs` - AI model data files
+- `PyQt6` - Qt framework resources
+
 ### Build Succeeds but App Crashes
 
 **Problem:** Runtime import errors
