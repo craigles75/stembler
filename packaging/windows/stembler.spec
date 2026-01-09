@@ -34,6 +34,9 @@ demucs_datas = collect_data_files('demucs', include_py_files=False)
 # Collect pykakasi data (needed by spotdl for Japanese text processing)
 pykakasi_datas = collect_data_files('pykakasi', include_py_files=False)
 
+# Collect scipy data (needed for signal processing)
+scipy_datas = collect_data_files('scipy', include_py_files=False)
+
 # Hidden imports (packages not auto-detected)
 hidden_imports = [
     # PyQt6 modules
@@ -59,13 +62,16 @@ hidden_imports = [
 # Collect all submodules for core packages
 hidden_imports += collect_submodules('music_stem_separator')
 hidden_imports += collect_submodules('demucs')
+hidden_imports += collect_submodules('scipy.signal')
+hidden_imports += collect_submodules('scipy.stats')
+hidden_imports += collect_submodules('scipy.sparse')
 
 # Analysis: Scan and collect all dependencies
 a = Analysis(
     [str(Path(SPECPATH) / 'launcher.py')],
     pathex=[str(src_path)],
     binaries=[],
-    datas=gui_datas + pyqt6_datas + demucs_datas + pykakasi_datas,
+    datas=gui_datas + pyqt6_datas + demucs_datas + pykakasi_datas + scipy_datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
