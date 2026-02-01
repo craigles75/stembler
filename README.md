@@ -47,6 +47,26 @@ To use Spotify track downloading, you need Spotify API credentials:
 
 📖 **Detailed setup instructions**: See [SETUP.md](SETUP.md)
 
+#### Loading credentials from .env file
+
+If you have a `.env` file with your credentials:
+
+```bash
+# Option 1: One-liner using env command (recommended)
+env $(cat .env | xargs) uv run stem-separator "https://open.spotify.com/track/..."
+
+# Option 2: Export variables first, then run
+export $(cat .env | xargs)
+uv run stem-separator "https://open.spotify.com/track/..."
+
+# Option 3: Set variables directly (no .env file needed)
+export SPOTIFY_CLIENT_ID=your_client_id
+export SPOTIFY_CLIENT_SECRET=your_client_secret
+uv run stem-separator "https://open.spotify.com/track/..."
+```
+
+Note: Credentials remain active only for the current shell session.
+
 ### Basic Usage
 
 #### GUI Application (Recommended for most users)
