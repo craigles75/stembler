@@ -276,9 +276,15 @@ Each user story phase can be tested independently without requiring other phases
 ### Documentation
 
 - [X] T086 [P] Update README.md with GUI installation and usage instructions
+- [X] T090 [P] Add macOS and Windows run-from-source instructions to README
 - [ ] T087 [P] Add GUI screenshots to README.md
 - [X] T088 [P] Update CLAUDE.md with GUI architecture details
 - [ ] T089 [P] Create PACKAGING.md with build instructions for both platforms
+
+### UI Layout Fixes
+
+- [ ] T091 Diagnose and fix component layout shifting on file upload interaction
+- [ ] T092 Verify layout stability across all UI state transitions (idle → upload → processing → results)
 
 ---
 

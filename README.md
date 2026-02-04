@@ -71,9 +71,19 @@ Note: Credentials remain active only for the current shell session.
 
 #### GUI Application (Recommended for most users)
 
+**macOS** — run from your existing clone:
 ```bash
-# Launch the desktop application
-uv run stem-separator-gui
+uv sync --extra gui          # Install GUI dependencies (PyQt6)
+uv run stem-separator-gui    # Launch the application
+```
+
+**Windows** — clone the repo on your Windows machine, then:
+```bash
+# Install uv if not already installed: https://docs.astral.sh/uv/
+git clone https://github.com/craigles75/stembler.git
+cd stembler
+uv sync --extra gui          # Install GUI dependencies (PyQt6)
+uv run stem-separator-gui    # Launch the application
 ```
 
 Then simply:
