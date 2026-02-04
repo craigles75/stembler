@@ -8,9 +8,7 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QFrame,
     QSizePolicy,
-    QStyle,
 )
-from PyQt6.QtCore import Qt
 
 from ..utils.theme import Theme
 

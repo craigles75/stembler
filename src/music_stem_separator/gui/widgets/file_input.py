@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QStyle,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QIcon
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent
 
 from ..models import AudioInput
 from ..utils.theme import Theme

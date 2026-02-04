@@ -3,7 +3,6 @@
 import sys
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 
 def open_folder(folder_path: str | Path) -> bool:

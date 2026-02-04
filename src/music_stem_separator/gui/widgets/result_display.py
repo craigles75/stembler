@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QStyle,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 
 from ..models import OutputBundle
 from ..utils.theme import Theme

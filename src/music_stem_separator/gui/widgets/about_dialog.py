@@ -5,7 +5,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QDialogButtonBox,
 )
 from PyQt6.QtCore import Qt

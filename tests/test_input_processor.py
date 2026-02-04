@@ -41,13 +41,25 @@ class TestInputProcessor:
             input_type = processor.determine_input_type(url)
             assert input_type == "spotify_url"
 
+    def test_determine_input_type_audio_url(self):
+        """Test input type detection for generic audio URLs."""
+        processor = InputProcessor()
+
+        audio_urls = [
+            "https://youtube.com/watch?v=abc123",
+            "https://example.com/song.mp3",
+        ]
+
+        for url in audio_urls:
+            input_type = processor.determine_input_type(url)
+            assert input_type == "audio_url"
+
     def test_determine_input_type_invalid(self):
         """Test input type detection for invalid inputs."""
         processor = InputProcessor()
 
         invalid_inputs = [
             "nonexistent_file.mp3",
-            "https://youtube.com/watch?v=abc123",
             "invalid_input",
             "",
         ]

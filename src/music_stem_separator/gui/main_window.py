@@ -6,7 +6,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QMessageBox,
-    QMenuBar,
     QFrame,
 )
 from PyQt6.QtCore import Qt

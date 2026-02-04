@@ -2,7 +2,6 @@
 
 import os
 import logging
-import tempfile
 from pathlib import Path
 from typing import Dict, Optional
 from urllib.parse import urlparse

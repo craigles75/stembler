@@ -1,0 +1,8 @@
+2026-02-04
+- fix: Update yt-dlp from 2025.10.22 to 2026.2.4 to resolve YouTube Music 403 blocks
+- fix: Add youtube as fallback audio provider when youtube-music fails
+- fix: output_manager peak_db format crash when value is missing
+- fix: test_spotify_handler tests missing env var mocks
+- fix: test_separator tests mocking wrong target (demucs.api.separate vs subprocess.run)
+- fix: test_input_processor incorrectly classifying YouTube URLs as invalid
+- chore: Remove 12 unused imports flagged by ruff

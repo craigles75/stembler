@@ -273,9 +273,10 @@ class OutputManager:
                     )
                     if metrics:
                         duration = metrics.get("duration_seconds", 0)
-                        peak_db = metrics.get("peak_db", "N/A")
+                        peak_db = metrics.get("peak_db")
+                        peak_str = f"{peak_db:.1f}dB" if isinstance(peak_db, (int, float)) else "N/A"
                         report_lines.append(
-                            f"    Duration: {duration:.1f}s, Peak: {peak_db:.1f}dB"
+                            f"    Duration: {duration:.1f}s, Peak: {peak_str}"
                         )
 
             report_lines.append("")

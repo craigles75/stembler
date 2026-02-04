@@ -2,7 +2,6 @@
 
 import tomllib
 from pathlib import Path
-from typing import Optional
 
 
 def get_version() -> str:

@@ -102,7 +102,7 @@ class AudioInput:
 
         # For now, just return the track ID as a preview
         # In the future, this could call Spotify API to get actual track info
-        return (f"Spotify Track", track_id[:8])  # Show first 8 chars of ID
+        return ("Spotify Track", track_id[:8])  # Show first 8 chars of ID
 
     def _is_direct_url(self, path: str) -> bool:
         """Check if input is a direct URL to an audio file."""

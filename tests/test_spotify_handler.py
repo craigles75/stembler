@@ -1,12 +1,16 @@
 """Tests for the Spotify handler module."""
 
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 from music_stem_separator.spotify_handler import SpotifyHandler
 
+_TEST_ENV = {"SPOTIFY_CLIENT_ID": "test_client_id", "SPOTIFY_CLIENT_SECRET": "test_client_secret"}
 
+
+@patch.dict(os.environ, _TEST_ENV)
 class TestSpotifyHandler:
     """Test cases for the SpotifyHandler class."""
 
@@ -69,14 +73,17 @@ class TestSpotifyHandler:
         for url, expected_id in test_cases:
             assert handler.extract_track_id(url) == expected_id
 
+    @patch("os.path.exists", return_value=True)
     @patch("music_stem_separator.spotify_handler.Spotdl")
-    def test_download_track_success(self, mock_spotdl_class):
+    def test_download_track_success(self, mock_spotdl_class, mock_exists):
         """Test successful track download."""
         handler = SpotifyHandler()
 
+        mock_song = Mock()
         mock_spotdl = Mock()
         mock_spotdl_class.return_value = mock_spotdl
-        mock_spotdl.download.return_value = ["/tmp/downloaded_song.mp3"]
+        mock_spotdl.search.return_value = [mock_song]
+        mock_spotdl.download.return_value = (mock_song, "/tmp/downloaded_song.mp3")
 
         url = "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
         output_dir = "/tmp/downloads"
@@ -92,11 +99,13 @@ class TestSpotifyHandler:
         """Test download failure handling."""
         handler = SpotifyHandler()
 
+        mock_song = Mock()
         mock_spotdl = Mock()
         mock_spotdl_class.return_value = mock_spotdl
+        mock_spotdl.search.return_value = [mock_song]
         mock_spotdl.download.side_effect = Exception("Download failed")
 
-        url = "https://open.spotify.com/track/invalid"
+        url = "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
         output_dir = "/tmp/downloads"
 
         result = handler.download_track(url, output_dir)

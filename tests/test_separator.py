@@ -34,36 +34,42 @@ class TestStemSeparator:
         assert not separator.is_supported_format("test.txt")
         assert not separator.is_supported_format("test")
 
-    @patch("music_stem_separator.separator.demucs.api.separate")
-    def test_separate_stems_success(self, mock_separate):
+    @patch("subprocess.run")
+    def test_separate_stems_success(self, mock_run):
         """Test successful stem separation."""
+        import tempfile
+        from unittest.mock import MagicMock
+
         separator = StemSeparator()
-        test_file = "test.mp3"
+
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+            test_file = f.name
+
         output_dir = "/tmp/output"
 
-        mock_separate.return_value = None
+        mock_run.return_value = MagicMock(returncode=0, stderr="")
 
         result = separator.separate_stems(test_file, output_dir)
 
-        mock_separate.assert_called_once()
+        mock_run.assert_called_once()
         assert result["success"] is True
         assert result["output_dir"] == output_dir
         assert "stems" in result
 
-    @patch("music_stem_separator.separator.demucs.api.separate")
-    def test_separate_stems_failure(self, mock_separate):
+        import os
+        os.unlink(test_file)
+
+    def test_separate_stems_failure(self):
         """Test stem separation with error handling."""
         separator = StemSeparator()
         test_file = "nonexistent.mp3"
         output_dir = "/tmp/output"
 
-        mock_separate.side_effect = Exception("File not found")
-
         result = separator.separate_stems(test_file, output_dir)
 
         assert result["success"] is False
         assert "error" in result
-        assert "File not found" in result["error"]
+        assert "not found" in result["error"].lower()
 
     def test_get_stem_paths(self):
         """Test stem file path generation."""
