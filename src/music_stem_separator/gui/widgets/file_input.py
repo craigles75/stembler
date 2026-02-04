@@ -66,9 +66,9 @@ class FileInputWidget(QWidget):
         layout.addWidget(self.drop_label)
 
         # OR separator
-        separator_label = QLabel("— OR —")
-        separator_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        separator_label.setStyleSheet(
+        self.separator_label = QLabel("— OR —")
+        self.separator_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.separator_label.setStyleSheet(
             f"""
             QLabel {{
                 color: {Theme.TEXT_TERTIARY};
@@ -77,7 +77,7 @@ class FileInputWidget(QWidget):
             }}
             """
         )
-        layout.addWidget(separator_label)
+        layout.addWidget(self.separator_label)
 
         # File path input row
         input_layout = QHBoxLayout()
@@ -138,8 +138,6 @@ class FileInputWidget(QWidget):
         )
         self.info_label.hide()
         layout.addWidget(self.info_label)
-
-        layout.addStretch()
 
     def _setup_drag_drop(self) -> None:
         """Enable drag and drop functionality."""
@@ -238,29 +236,22 @@ class FileInputWidget(QWidget):
         """Show valid input state."""
         self.validation_label.hide()
 
-        input_type = self._current_input.input_type.value.replace("_", " ").title()
-        display_name = self._current_input.display_name
-
         # Special handling for Spotify URLs
         if self._current_input.input_type.value == "spotify_url":
             track_info = self._current_input.get_spotify_preview_info()
             if track_info:
                 track_name, artist = track_info
-                info_text = f"✓ Spotify Track: {track_name} by {artist}"
                 drop_text = f"🎵  {track_name}\n<small><font color='{Theme.SUCCESS}'>by {artist}</font></small>"
             else:
-                info_text = f"✓ Valid {input_type}"
                 drop_text = "🎵 Spotify Track"
         else:
-            info_text = f"✓ Valid {input_type}: {display_name}"
-            drop_text = f"✓  {display_name}"
+            drop_text = f"✓  {self._current_input.display_name}"
 
-        self.info_label.setText(info_text)
-        self.info_label.show()
-
+        # Collapse drop zone to compact card, hide redundant elements
+        self.separator_label.hide()
+        self.info_label.hide()
+        self.drop_label.setMinimumHeight(0)
         self.drop_label.setText(drop_text)
-        # Valid input state with card appearance and left border accent
-        # Maintain minimum height to prevent layout shift
         self.drop_label.setStyleSheet(
             f"""
             QLabel {{
@@ -271,8 +262,7 @@ class FileInputWidget(QWidget):
                 color: {Theme.SUCCESS};
                 font-size: {Theme.FONT_SIZE_MD}px;
                 font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
-                padding: {Theme.SPACING_LG}px;
-                min-height: 180px;
+                padding: {Theme.SPACING_MD}px {Theme.SPACING_LG}px;
             }}
             """
         )
@@ -280,10 +270,12 @@ class FileInputWidget(QWidget):
     def _show_invalid_input(self) -> None:
         """Show invalid input state."""
         self.info_label.hide()
+        self.separator_label.show()
         self.validation_label.setText(
             f"✗ {self._current_input.error_message or 'Invalid input'}"
         )
         self.validation_label.show()
+        self.drop_label.setMinimumHeight(180)
         self._reset_drop_label_style()
         self.drop_label.setText(
             "📁\n\nDrag and drop an audio file here\n"
@@ -294,6 +286,8 @@ class FileInputWidget(QWidget):
         """Clear validation state."""
         self.validation_label.hide()
         self.info_label.hide()
+        self.separator_label.show()
+        self.drop_label.setMinimumHeight(180)
         self._reset_drop_label_style()
         self.drop_label.setText(
             "📁\n\nDrag and drop an audio file here\n"

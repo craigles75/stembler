@@ -13,7 +13,7 @@ def get_version() -> str:
     try:
         # Find pyproject.toml (go up from this file to project root)
         current_file = Path(__file__)
-        project_root = current_file.parent.parent.parent.parent
+        project_root = current_file.parent.parent.parent.parent.parent
         pyproject_path = project_root / "pyproject.toml"
 
         if not pyproject_path.exists():
@@ -39,7 +39,7 @@ def get_app_name() -> str:
     """
     try:
         current_file = Path(__file__)
-        project_root = current_file.parent.parent.parent.parent
+        project_root = current_file.parent.parent.parent.parent.parent
         pyproject_path = project_root / "pyproject.toml"
 
         if not pyproject_path.exists():
@@ -62,7 +62,7 @@ def get_description() -> str:
     """
     try:
         current_file = Path(__file__)
-        project_root = current_file.parent.parent.parent.parent
+        project_root = current_file.parent.parent.parent.parent.parent
         pyproject_path = project_root / "pyproject.toml"
 
         if not pyproject_path.exists():

@@ -38,10 +38,11 @@ class ResultDisplay(QWidget):
 
         # Result container frame - card design
         self.result_frame = QFrame()
+        self.result_frame.setObjectName("result_frame")
         self.result_frame.setFrameShape(QFrame.Shape.NoFrame)
         self.result_frame.setStyleSheet(
             f"""
-            QFrame {{
+            QFrame#result_frame {{
                 background-color: {Theme.BACKGROUND_PRIMARY};
                 border: 1px solid {Theme.BORDER_LIGHT};
                 border-radius: {Theme.RADIUS_LG}px;
@@ -161,7 +162,7 @@ class ResultDisplay(QWidget):
         # Add subtle green accent background
         self.result_frame.setStyleSheet(
             f"""
-            QFrame {{
+            QFrame#result_frame {{
                 background-color: {Theme.SUCCESS_LIGHT};
                 border: 1px solid {Theme.SUCCESS};
                 border-left: 4px solid {Theme.SUCCESS};
@@ -198,7 +199,7 @@ class ResultDisplay(QWidget):
         # Add subtle red accent background
         self.result_frame.setStyleSheet(
             f"""
-            QFrame {{
+            QFrame#result_frame {{
                 background-color: {Theme.ERROR_LIGHT};
                 border: 1px solid {Theme.ERROR};
                 border-left: 4px solid {Theme.ERROR};
@@ -222,7 +223,7 @@ class ResultDisplay(QWidget):
         # Reset to default frame styling
         self.result_frame.setStyleSheet(
             f"""
-            QFrame {{
+            QFrame#result_frame {{
                 background-color: {Theme.BACKGROUND_PRIMARY};
                 border: 1px solid {Theme.BORDER_LIGHT};
                 border-radius: {Theme.RADIUS_LG}px;

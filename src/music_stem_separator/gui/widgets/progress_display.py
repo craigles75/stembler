@@ -31,10 +31,11 @@ class ProgressDisplay(QWidget):
 
         # Progress container frame with card styling
         self.progress_frame = QFrame()
+        self.progress_frame.setObjectName("progress_frame")
         self.progress_frame.setFrameShape(QFrame.Shape.NoFrame)
         self.progress_frame.setStyleSheet(
             f"""
-            QFrame {{
+            QFrame#progress_frame {{
                 background-color: {Theme.BACKGROUND_PRIMARY};
                 border: 1px solid {Theme.BORDER_LIGHT};
                 border-radius: {Theme.RADIUS_LG}px;

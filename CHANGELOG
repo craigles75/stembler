@@ -1,4 +1,7 @@
 2026-02-04
+- fix: GUI progress and result labels invisible due to QFrame stylesheet cascading in PyQt6
+- fix: GUI file input drop zone stayed at 180px after file selection, OR separator never hidden
+- fix: Window title showed "vunknown" — version.py path traversal was one level short
 - fix: Update yt-dlp from 2025.10.22 to 2026.2.4 to resolve YouTube Music 403 blocks
 - fix: Add youtube as fallback audio provider when youtube-music fails
 - fix: output_manager peak_db format crash when value is missing
