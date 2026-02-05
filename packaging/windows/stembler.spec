@@ -23,7 +23,8 @@ app_name = "Stembler"
 app_version = "0.1.0"  # Read from pyproject.toml in production
 
 # Collect all GUI package data
-gui_datas = []
+gui_resources = str(project_root / "src" / "music_stem_separator" / "gui" / "resources")
+gui_datas = [(gui_resources, "gui/resources")]
 
 # Collect PyQt6 plugins and dependencies
 pyqt6_datas = collect_data_files('PyQt6')

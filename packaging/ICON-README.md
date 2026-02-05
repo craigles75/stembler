@@ -74,7 +74,7 @@ For local conversion:
 ## Current Status
 
 - [x] SVG source created
-- [ ] macOS .icns generated (placeholder needed)
-- [ ] Windows .ico generated (placeholder needed)
-
-Note: For now, PyInstaller will use the default icon if platform-specific icons are not present.
+- [x] macOS .icns generated (134KB, full iconset)
+- [x] Windows .ico generated (22KB, 6 sizes: 16/32/48/64/128/256)
+- [x] Qt runtime icon set via `gui_main.py` (512x512 PNG in gui/resources/)
+- [x] PyInstaller specs updated to bundle gui/resources/
