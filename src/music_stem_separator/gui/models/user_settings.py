@@ -22,7 +22,9 @@ class UserSettings:
     @property
     def has_spotify_credentials(self) -> bool:
         """Check if Spotify credentials are configured."""
-        return bool(self.spotify_client_id.strip() and self.spotify_client_secret.strip())
+        return bool(
+            self.spotify_client_id.strip() and self.spotify_client_secret.strip()
+        )
 
     def get_output_directory(self) -> Path:
         """Get the output directory path, using default if not set."""
@@ -32,6 +34,7 @@ class UserSettings:
         # Default to Music/Stembler Output
         try:
             from platformdirs import user_music_path
+
             music_dir = Path(user_music_path())
         except Exception:
             music_dir = Path.home()

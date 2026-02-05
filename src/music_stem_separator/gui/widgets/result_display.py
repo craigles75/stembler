@@ -22,6 +22,9 @@ class ResultDisplay(QWidget):
     # Signal emitted when user clicks to open output folder
     open_folder_requested = pyqtSignal(str)  # folder_path
 
+    # Signal emitted when user clicks to separate another track
+    another_track_requested = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._output_bundle: OutputBundle | None = None
@@ -102,6 +105,36 @@ class ResultDisplay(QWidget):
         button_layout = QHBoxLayout()
         button_layout.addStretch()
 
+        # Separate another track button (outline style, secondary action)
+        self.another_track_button = QPushButton("Separate Another Track")
+        self.another_track_button.clicked.connect(self._on_another_track_clicked)
+        self.another_track_button.setStyleSheet(
+            f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Theme.SECONDARY};
+                border: 1px solid {Theme.BORDER_MEDIUM};
+                border-radius: {Theme.RADIUS_MD}px;
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                padding: 0 {Theme.BUTTON_PADDING_X}px;
+                min-height: 40px;
+            }}
+            QPushButton:hover {{
+                border-color: {Theme.SECONDARY};
+                background-color: {Theme.BACKGROUND_HOVER};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme.BACKGROUND_TERTIARY};
+            }}
+            QPushButton:disabled {{
+                color: {Theme.TEXT_DISABLED};
+                border-color: {Theme.BORDER_LIGHT};
+            }}
+            """
+        )
+        button_layout.addWidget(self.another_track_button)
+
         # Open folder button with icon
         self.open_folder_button = QPushButton("  Open Output Folder")
         folder_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon)
@@ -130,15 +163,6 @@ class ResultDisplay(QWidget):
         self.icon_label.show()
 
         self.title_label.setText("Stem Separation Complete!")
-        self.title_label.setStyleSheet(
-            f"""
-            QLabel {{
-                font-size: {Theme.FONT_SIZE_LG}px;
-                font-weight: {Theme.FONT_WEIGHT_BOLD};
-                color: {Theme.SUCCESS};
-            }}
-            """
-        )
 
         # Build details text
         details = []
@@ -158,8 +182,14 @@ class ResultDisplay(QWidget):
 
         self.details_label.setText("\n".join(details))
         self.open_folder_button.show()
+        self.another_track_button.show()
 
-        # Add subtle green accent background
+        # Apply the green-accent frame first, then re-paint child label
+        # stylesheets.  PyQt6 cascades QFrame background-color into children,
+        # which can wipe out colours that were set before the frame stylesheet
+        # was (re-)applied.  title_label uses TEXT_PRIMARY (dark) for contrast
+        # against the light green background; the green accent lives on the
+        # frame border and the checkmark icon.
         self.result_frame.setStyleSheet(
             f"""
             QFrame#result_frame {{
@@ -168,6 +198,24 @@ class ResultDisplay(QWidget):
                 border-left: 4px solid {Theme.SUCCESS};
                 border-radius: {Theme.RADIUS_LG}px;
                 padding: {Theme.SPACING_LG}px;
+            }}
+            """
+        )
+        self.title_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_LG}px;
+                font-weight: {Theme.FONT_WEIGHT_BOLD};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
+        )
+        self.details_label.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.FONT_SIZE_SM}px;
+                margin-top: {Theme.SPACING_SM}px;
             }}
             """
         )
@@ -193,8 +241,11 @@ class ResultDisplay(QWidget):
             """
         )
 
-        self.details_label.setText(f"{error_message}\n\n💡 Tip: Check the log file for more details")
+        self.details_label.setText(
+            f"{error_message}\n\n💡 Tip: Check the log file for more details"
+        )
         self.open_folder_button.hide()
+        self.another_track_button.hide()
 
         # Add subtle red accent background
         self.result_frame.setStyleSheet(
@@ -219,6 +270,7 @@ class ResultDisplay(QWidget):
         self.title_label.setText("")
         self.details_label.setText("")
         self.open_folder_button.show()
+        self.another_track_button.show()
 
         # Reset to default frame styling
         self.result_frame.setStyleSheet(
@@ -248,3 +300,7 @@ class ResultDisplay(QWidget):
                     + "\n\n⚠️ Could not open folder automatically. "
                     + f"Please navigate to: {folder_path}"
                 )
+
+    def _on_another_track_clicked(self) -> None:
+        """Handle separate another track button click."""
+        self.another_track_requested.emit()

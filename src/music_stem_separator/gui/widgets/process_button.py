@@ -46,7 +46,9 @@ class ProcessButton(QPushButton):
         if self._is_processing:
             # Cancel state - red button with stop icon
             self.setText("  Cancel")
-            cancel_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserStop)
+            cancel_icon = self.style().standardIcon(
+                QStyle.StandardPixmap.SP_BrowserStop
+            )
             self.setIcon(cancel_icon)
             self.setEnabled(True)
             self.setStyleSheet(
@@ -72,7 +74,9 @@ class ProcessButton(QPushButton):
         else:
             # Disabled state - no icon
             self.setText("Separate Stems")
-            self.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_CustomBase))  # Empty icon
+            self.setIcon(
+                self.style().standardIcon(QStyle.StandardPixmap.SP_CustomBase)
+            )  # Empty icon
             self.setEnabled(False)
             self.setStyleSheet(
                 Theme.button_style(

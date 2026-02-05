@@ -71,7 +71,9 @@ def get_description() -> str:
         with open(pyproject_path, "rb") as f:
             pyproject_data = tomllib.load(f)
 
-        return pyproject_data.get("project", {}).get("description", "Music Stem Separator")
+        return pyproject_data.get("project", {}).get(
+            "description", "Music Stem Separator"
+        )
 
     except Exception:
         return "Music Stem Separator"

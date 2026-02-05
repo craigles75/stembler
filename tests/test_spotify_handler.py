@@ -7,7 +7,10 @@ from unittest.mock import Mock, patch
 
 from music_stem_separator.spotify_handler import SpotifyHandler
 
-_TEST_ENV = {"SPOTIFY_CLIENT_ID": "test_client_id", "SPOTIFY_CLIENT_SECRET": "test_client_secret"}
+_TEST_ENV = {
+    "SPOTIFY_CLIENT_ID": "test_client_id",
+    "SPOTIFY_CLIENT_SECRET": "test_client_secret",
+}
 
 
 @patch.dict(os.environ, _TEST_ENV)

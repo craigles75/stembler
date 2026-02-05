@@ -1,4 +1,22 @@
+2026-02-05
+- fix: SettingsPanel QGroupBox titles invisible — added explicit color and background-color to ::title pseudo-element in both group boxes
+- fix: SettingsPanel form labels invisible — replaced bare-string addRow labels with explicitly styled QLabel widgets for Model, Output Directory, Enhancement, Client ID, Client Secret
+- fix: SettingsPanel Show buttons rendered on separate rows — moved each Show button inline with its credential field via QHBoxLayout
+- fix: SettingsPanel Show buttons used opaque secondary style — replaced with ghost/outline stylesheet, added Show/Hide text toggle on checked state
+- fix: SettingsPanel Cancel button unstyled — added ghost outline stylesheet; Save button now explicitly uses primary green style
+- fix: SettingsPanel credential validation used modal QMessageBox — replaced with inline status label showing success/error feedback beneath the Test Credentials button
+- test: Add 27 headless widget tests for SettingsPanel covering all six UX fixes (title styles, label visibility, inline Show buttons, ghost button style, dialog button styles, inline credential validation)
+- feat: Add clear/reset button to file input success banner; visible only in valid-input state, flush-right inside the green card, participates in widget enable/disable cycle
+- test: Add 14 headless widget tests for FileInputWidget clear button (visibility, reset behaviour, enabled state); add conftest with session-scoped offscreen QApplication fixture
+- fix: Rationalize green color usage — add blue ACCENT palette (#3B82F6) for Browse button and input focus rings; reserve green for primary action and success feedback only
+- feat: Add gear icon settings button to main window header (top-right, borderless, opens SettingsPanel on click)
+
 2026-02-04
+- fix: Success screen text invisible — file_input green-on-green contrast, progress/result labels lost after QFrame re-style
+- fix: packaging launcher E402 noqa placement broken by black multi-line wrap; build_msi unused cx_Freeze probe imports and bare f-string
+- chore: Run black across full project (21 files reformatted)
+- feat: Add "Separate Another Track" outline button to result display, resets UI for a new job
+- fix: progress_display.reset() now restores status_label stylesheet (was left green/red after complete/error)
 - fix: GUI progress and result labels invisible due to QFrame stylesheet cascading in PyQt6
 - fix: GUI file input drop zone stayed at 180px after file selection, OR separator never hidden
 - fix: Window title showed "vunknown" — version.py path traversal was one level short

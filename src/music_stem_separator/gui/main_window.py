@@ -4,9 +4,12 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
+    QPushButton,
     QMessageBox,
     QFrame,
+    QSizePolicy,
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
@@ -73,7 +76,11 @@ class MainWindow(QMainWindow):
             Theme.SPACING_XL,  # 32px bottom
         )
 
-        # Header
+        # Header row: title (centered) + settings gear button (right)
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(0)
+
         header_label = QLabel("Music Stem Separator")
         header_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         header_label.setStyleSheet(
@@ -87,7 +94,45 @@ class MainWindow(QMainWindow):
             }}
             """
         )
-        layout.addWidget(header_label)
+        # Expanding policy lets the label fill available width so the title
+        # stays visually centered across the full window width.
+        header_label.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
+
+        # Settings gear button – icon-only, borderless, right-aligned
+        self._settings_button = QPushButton("\u2699")  # Unicode gear symbol
+        self._settings_button.setFixedSize(
+            Theme.ICON_SIZE_LG, Theme.BUTTON_HEIGHT_SM
+        )  # 32x32
+        self._settings_button.setToolTip("Settings")
+        self._settings_button.setStyleSheet(
+            f"""
+            QPushButton {{
+                background: transparent;
+                border: none;
+                border-radius: {Theme.RADIUS_SM}px;
+                color: {Theme.TEXT_SECONDARY};
+                font-size: 18px;
+                padding: 0;
+                margin: 0;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.BACKGROUND_HOVER};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme.BACKGROUND_TERTIARY};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
+        )
+        self._settings_button.clicked.connect(self._on_settings_clicked)
+
+        header_row.addWidget(header_label)
+        header_row.addWidget(self._settings_button)
+
+        layout.addLayout(header_row)
 
         subtitle_label = QLabel(
             "Separate your audio into drums, bass, vocals, and other instruments"
@@ -167,7 +212,12 @@ class MainWindow(QMainWindow):
         self.process_button.cancel_requested.connect(self._on_cancel_requested)
 
         # Result display signals
-        self.result_display.open_folder_requested.connect(self._on_open_folder_requested)
+        self.result_display.open_folder_requested.connect(
+            self._on_open_folder_requested
+        )
+        self.result_display.another_track_requested.connect(
+            self._on_another_track_requested
+        )
 
         # Controller signals
         self._controller.processing_started.connect(self._on_processing_started)
@@ -235,6 +285,19 @@ class MainWindow(QMainWindow):
         # This is just for logging or additional actions if needed
         pass
 
+    def _on_another_track_requested(self) -> None:
+        """Reset the UI so the user can process a new track."""
+        self._current_audio_input = None
+        self._progress_tracker = None
+        self.file_input.clear()
+        self.file_input.set_enabled(True)
+        self.progress_display.reset()
+        self.result_display.clear()
+        self.process_button.set_processing(False)
+        self.process_button.set_ready_to_process(False)
+        version = get_version()
+        self.setWindowTitle(f"Stembler v{version} - Music Stem Separator")
+
     def _on_settings_clicked(self) -> None:
         """Handle settings menu click."""
         # Create and show settings dialog
@@ -276,7 +339,9 @@ class MainWindow(QMainWindow):
         self.result_display.clear()
 
         # Create progress tracker for ETA estimation
-        input_path = self._current_audio_input.path if self._current_audio_input else None
+        input_path = (
+            self._current_audio_input.path if self._current_audio_input else None
+        )
         self._progress_tracker = ProgressTracker(
             model_name=self._current_settings.model_name, file_path=input_path
         )
@@ -284,8 +349,7 @@ class MainWindow(QMainWindow):
 
         # Show progress display (with download message for Spotify/URLs)
         is_download = (
-            self._current_audio_input
-            and self._current_audio_input.requires_download
+            self._current_audio_input and self._current_audio_input.requires_download
         )
         self.progress_display.start_processing(is_download=is_download)
 
@@ -397,7 +461,9 @@ class MainWindow(QMainWindow):
         msg_box.setIcon(QMessageBox.Icon.Information)
         msg_box.setWindowTitle("Spotify Credentials Required")
         msg_box.setText(f"Cannot process Spotify URL: {error_msg}")
-        msg_box.setInformativeText("Spotify URLs require API credentials to download tracks.")
+        msg_box.setInformativeText(
+            "Spotify URLs require API credentials to download tracks."
+        )
         msg_box.setDetailedText(instructions)
         msg_box.exec()
 

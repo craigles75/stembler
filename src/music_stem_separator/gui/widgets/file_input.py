@@ -38,7 +38,14 @@ class FileInputWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)  # No margins - spacing handled by parent
         layout.setSpacing(Theme.SPACING_MD)
 
-        # Drag-drop area with icon and text
+        # Drag-drop area: a container widget holds the label and the clear
+        # button in a horizontal layout.  This lets the button sit flush-right
+        # inside the success banner without manual geometry or resizeEvent hacks.
+        self.drop_area = QWidget()
+        drop_area_layout = QHBoxLayout(self.drop_area)
+        drop_area_layout.setContentsMargins(0, 0, 0, 0)
+        drop_area_layout.setSpacing(0)
+
         self.drop_label = QLabel(
             "📁\n\nDrag and drop an audio file here\n"
             f"<small><font color='{Theme.TEXT_TERTIARY}'>or paste a Spotify URL</font></small>"
@@ -63,7 +70,39 @@ class FileInputWidget(QWidget):
             }}
             """
         )
-        layout.addWidget(self.drop_label)
+        drop_area_layout.addWidget(self.drop_label, stretch=1)
+
+        # Clear / reset button.  Starts hidden; shown only when a valid input
+        # is displayed in the success banner.
+        self.clear_button = QPushButton("\u2715")
+        self.clear_button.setFixedSize(24, 24)
+        self.clear_button.setToolTip("Clear selection")
+        self.clear_button.clicked.connect(self.clear)
+        self.clear_button.setStyleSheet(
+            f"""
+            QPushButton {{
+                background: transparent;
+                border: none;
+                border-radius: 12px;
+                color: {Theme.TEXT_TERTIARY};
+                font-size: 14px;
+                padding: 0;
+                margin-right: {Theme.SPACING_SM}px;
+            }}
+            QPushButton:hover {{
+                color: {Theme.TEXT_SECONDARY};
+                background-color: rgba(0, 0, 0, 0.06);
+            }}
+            QPushButton:pressed {{
+                color: {Theme.TEXT_PRIMARY};
+                background-color: rgba(0, 0, 0, 0.1);
+            }}
+            """
+        )
+        self.clear_button.hide()
+        drop_area_layout.addWidget(self.clear_button, stretch=0)
+
+        layout.addWidget(self.drop_area)
 
         # OR separator
         self.separator_label = QLabel("— OR —")
@@ -96,9 +135,9 @@ class FileInputWidget(QWidget):
         self.browse_button.clicked.connect(self._on_browse_clicked)
         self.browse_button.setStyleSheet(
             Theme.button_style(
-                Theme.SECONDARY,
-                Theme.SECONDARY_HOVER,
-                Theme.SECONDARY_PRESSED,
+                Theme.ACCENT,
+                Theme.ACCENT_HOVER,
+                Theme.ACCENT_PRESSED,
                 height=Theme.INPUT_HEIGHT,
             )
         )
@@ -241,7 +280,7 @@ class FileInputWidget(QWidget):
             track_info = self._current_input.get_spotify_preview_info()
             if track_info:
                 track_name, artist = track_info
-                drop_text = f"🎵  {track_name}\n<small><font color='{Theme.SUCCESS}'>by {artist}</font></small>"
+                drop_text = f"🎵  {track_name}\n<small><font color='{Theme.TEXT_SECONDARY}'>by {artist}</font></small>"
             else:
                 drop_text = "🎵 Spotify Track"
         else:
@@ -251,6 +290,9 @@ class FileInputWidget(QWidget):
         self.separator_label.hide()
         self.info_label.hide()
         self.drop_label.setMinimumHeight(0)
+        self.drop_label.setAlignment(
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
+        )
         self.drop_label.setText(drop_text)
         self.drop_label.setStyleSheet(
             f"""
@@ -259,23 +301,26 @@ class FileInputWidget(QWidget):
                 border-left: 4px solid {Theme.SUCCESS};
                 border-radius: 10px;
                 background-color: {Theme.SUCCESS_LIGHT};
-                color: {Theme.SUCCESS};
+                color: {Theme.TEXT_PRIMARY};
                 font-size: {Theme.FONT_SIZE_MD}px;
                 font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
                 padding: {Theme.SPACING_MD}px {Theme.SPACING_LG}px;
             }}
             """
         )
+        self.clear_button.show()
 
     def _show_invalid_input(self) -> None:
         """Show invalid input state."""
         self.info_label.hide()
+        self.clear_button.hide()
         self.separator_label.show()
         self.validation_label.setText(
             f"✗ {self._current_input.error_message or 'Invalid input'}"
         )
         self.validation_label.show()
         self.drop_label.setMinimumHeight(180)
+        self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._reset_drop_label_style()
         self.drop_label.setText(
             "📁\n\nDrag and drop an audio file here\n"
@@ -286,8 +331,10 @@ class FileInputWidget(QWidget):
         """Clear validation state."""
         self.validation_label.hide()
         self.info_label.hide()
+        self.clear_button.hide()
         self.separator_label.show()
         self.drop_label.setMinimumHeight(180)
+        self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._reset_drop_label_style()
         self.drop_label.setText(
             "📁\n\nDrag and drop an audio file here\n"
@@ -316,4 +363,5 @@ class FileInputWidget(QWidget):
         """Enable or disable the widget."""
         self.path_input.setEnabled(enabled)
         self.browse_button.setEnabled(enabled)
+        self.clear_button.setEnabled(enabled)
         self.setAcceptDrops(enabled)

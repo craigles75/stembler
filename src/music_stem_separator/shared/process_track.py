@@ -47,11 +47,13 @@ def process_track(
     def _report_progress(stage: str, percent: int, message: str):
         """Helper to report progress if callback provided."""
         if progress_callback:
-            progress_callback({
-                "stage": stage,
-                "percent": percent,
-                "message": message,
-            })
+            progress_callback(
+                {
+                    "stage": stage,
+                    "percent": percent,
+                    "message": message,
+                }
+            )
 
     try:
         # Step 1: Process input (0-10%)
@@ -109,7 +111,11 @@ def process_track(
                     separation_result["stems"][stem_name] = result["output_file"]
                 _report_progress("enhancing_audio", 90, "Audio enhancement completed")
             else:
-                _report_progress("enhancing_audio", 90, "Audio enhancement failed, using original stems")
+                _report_progress(
+                    "enhancing_audio",
+                    90,
+                    "Audio enhancement failed, using original stems",
+                )
         else:
             _report_progress("enhancing_audio", 90, "Skipping audio enhancement")
 

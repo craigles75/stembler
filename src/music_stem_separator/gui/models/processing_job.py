@@ -23,7 +23,9 @@ class ProcessingJob:
 
     input_path: str
     output_dir: str
-    job_id: str = field(default_factory=lambda: datetime.now().strftime("%Y%m%d_%H%M%S"))
+    job_id: str = field(
+        default_factory=lambda: datetime.now().strftime("%Y%m%d_%H%M%S")
+    )
     status: JobStatus = JobStatus.PENDING
     model_name: str = "htdemucs"
     device: Optional[str] = None
@@ -78,7 +80,11 @@ class ProcessingJob:
     @property
     def is_complete(self) -> bool:
         """Check if job is in a terminal state."""
-        return self.status in (JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED)
+        return self.status in (
+            JobStatus.COMPLETED,
+            JobStatus.FAILED,
+            JobStatus.CANCELLED,
+        )
 
     @property
     def duration_seconds(self) -> Optional[float]:
@@ -111,5 +117,7 @@ class ProcessingJob:
             "duration_seconds": self.duration_seconds,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }

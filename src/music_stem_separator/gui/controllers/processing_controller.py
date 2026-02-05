@@ -199,7 +199,9 @@ class ProcessingController(QObject):
 
                 # Add processing time from job
                 if self._current_job.duration_seconds:
-                    output_bundle.processing_time_seconds = self._current_job.duration_seconds
+                    output_bundle.processing_time_seconds = (
+                        self._current_job.duration_seconds
+                    )
 
                 self.processing_completed.emit(output_bundle)
             except Exception as e:

@@ -63,10 +63,41 @@ class SettingsPanel(QDialog):
 
         # Dialog buttons (Save/Cancel)
         button_box = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Save
+            | QDialogButtonBox.StandardButton.Cancel
         )
         button_box.accepted.connect(self._on_save_clicked)
         button_box.rejected.connect(self.reject)
+
+        # Style Save and Cancel buttons explicitly
+        save_btn = button_box.button(QDialogButtonBox.StandardButton.Save)
+        save_btn.setStyleSheet(
+            Theme.button_style(
+                Theme.PRIMARY, Theme.PRIMARY_HOVER, Theme.PRIMARY_PRESSED
+            )
+        )
+
+        cancel_btn = button_box.button(QDialogButtonBox.StandardButton.Cancel)
+        cancel_btn.setStyleSheet(
+            f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Theme.TEXT_SECONDARY};
+                border: 1px solid {Theme.BORDER_MEDIUM};
+                border-radius: {Theme.RADIUS_MD}px;
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                padding: 0 16px;
+                min-height: 40px;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.BACKGROUND_HOVER};
+                border-color: {Theme.BORDER_DARK};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
+        )
+
         layout.addWidget(button_box)
 
     def _create_processing_settings_group(self) -> QGroupBox:
@@ -88,13 +119,17 @@ class SettingsPanel(QDialog):
                 subcontrol-origin: margin;
                 left: {Theme.SPACING_MD}px;
                 padding: 0 {Theme.SPACING_SM}px;
+                color: {Theme.TEXT_PRIMARY};
+                background-color: {Theme.BACKGROUND_PRIMARY};
             }}
             """
         )
 
         form_layout = QFormLayout()
         form_layout.setSpacing(Theme.SPACING_MD)
-        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        form_layout.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
 
         # Model selection dropdown with custom styling
         self.model_combo = QComboBox()
@@ -103,7 +138,12 @@ class SettingsPanel(QDialog):
             self.model_combo.addItem(description, model_id)
         self.model_combo.setToolTip("Select the AI model to use for stem separation")
         self.model_combo.setStyleSheet(Theme.input_style())
-        form_layout.addRow("Model:", self.model_combo)
+
+        model_label = QLabel("Model:")
+        model_label.setStyleSheet(
+            f"QLabel {{ color: {Theme.TEXT_PRIMARY}; font-size: {Theme.FONT_SIZE_SM}px; }}"
+        )
+        form_layout.addRow(model_label, self.model_combo)
 
         # Model info label
         model_info = QLabel(
@@ -127,7 +167,9 @@ class SettingsPanel(QDialog):
 
         self.output_dir_input = QLineEdit()
         self.output_dir_input.setPlaceholderText("Default: ~/Music/Stembler Output")
-        self.output_dir_input.setToolTip("Directory where separated stems will be saved")
+        self.output_dir_input.setToolTip(
+            "Directory where separated stems will be saved"
+        )
         self.output_dir_input.setStyleSheet(Theme.input_style())
         output_layout.addWidget(self.output_dir_input, stretch=1)
 
@@ -146,7 +188,11 @@ class SettingsPanel(QDialog):
         )
         output_layout.addWidget(self.browse_button)
 
-        form_layout.addRow("Output Directory:", output_layout)
+        output_dir_label = QLabel("Output Directory:")
+        output_dir_label.setStyleSheet(
+            f"QLabel {{ color: {Theme.TEXT_PRIMARY}; font-size: {Theme.FONT_SIZE_SM}px; }}"
+        )
+        form_layout.addRow(output_dir_label, output_layout)
 
         # Enhancement checkbox
         self.enhancement_checkbox = QCheckBox("Enable audio enhancement (recommended)")
@@ -162,7 +208,11 @@ class SettingsPanel(QDialog):
             }}
             """
         )
-        form_layout.addRow("Enhancement:", self.enhancement_checkbox)
+        enhancement_label = QLabel("Enhancement:")
+        enhancement_label.setStyleSheet(
+            f"QLabel {{ color: {Theme.TEXT_PRIMARY}; font-size: {Theme.FONT_SIZE_SM}px; }}"
+        )
+        form_layout.addRow(enhancement_label, self.enhancement_checkbox)
 
         group.setLayout(form_layout)
         return group
@@ -186,6 +236,8 @@ class SettingsPanel(QDialog):
                 subcontrol-origin: margin;
                 left: {Theme.SPACING_MD}px;
                 padding: 0 {Theme.SPACING_SM}px;
+                color: {Theme.TEXT_PRIMARY};
+                background-color: {Theme.BACKGROUND_PRIMARY};
             }}
             """
         )
@@ -213,61 +265,117 @@ class SettingsPanel(QDialog):
         # Form for credentials
         form_layout = QFormLayout()
         form_layout.setSpacing(Theme.SPACING_SM)
-        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        form_layout.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
 
-        # Client ID
+        # Client ID row: label + (input + ghost Show button)
+        client_id_label = QLabel("Client ID:")
+        client_id_label.setStyleSheet(
+            f"QLabel {{ color: {Theme.TEXT_PRIMARY}; font-size: {Theme.FONT_SIZE_SM}px; }}"
+        )
+
+        client_id_row = QHBoxLayout()
+        client_id_row.setSpacing(Theme.SPACING_SM)
+
         self.spotify_client_id_input = QLineEdit()
         self.spotify_client_id_input.setPlaceholderText("Enter your Spotify Client ID")
         self.spotify_client_id_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.spotify_client_id_input.setStyleSheet(Theme.input_style())
-        form_layout.addRow("Client ID:", self.spotify_client_id_input)
+        client_id_row.addWidget(self.spotify_client_id_input, stretch=1)
 
-        # Show/Hide Client ID button
         show_client_id_btn = QPushButton("Show")
-        show_client_id_btn.setMaximumWidth(80)
+        show_client_id_btn.setFixedWidth(60)
         show_client_id_btn.setCheckable(True)
         show_client_id_btn.setStyleSheet(
-            Theme.button_style(
-                Theme.SECONDARY,
-                Theme.SECONDARY_HOVER,
-                Theme.SECONDARY_PRESSED,
-                height=Theme.INPUT_HEIGHT - 8,
-            )
+            f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Theme.TEXT_SECONDARY};
+                border: 1px solid {Theme.BORDER_MEDIUM};
+                border-radius: {Theme.RADIUS_SM}px;
+                font-size: {Theme.FONT_SIZE_SM}px;
+                padding: 4px 8px;
+                min-height: 32px;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.BACKGROUND_HOVER};
+                border-color: {Theme.BORDER_DARK};
+            }}
+            QPushButton:checked {{
+                background-color: {Theme.BACKGROUND_TERTIARY};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
         )
         show_client_id_btn.toggled.connect(
-            lambda checked: self.spotify_client_id_input.setEchoMode(
-                QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+            lambda checked: (
+                self.spotify_client_id_input.setEchoMode(
+                    QLineEdit.EchoMode.Normal
+                    if checked
+                    else QLineEdit.EchoMode.Password
+                ),
+                show_client_id_btn.setText("Hide" if checked else "Show"),
             )
         )
-        form_layout.addRow("", show_client_id_btn)
+        client_id_row.addWidget(show_client_id_btn)
 
-        # Client Secret
+        form_layout.addRow(client_id_label, client_id_row)
+
+        # Client Secret row: label + (input + ghost Show button)
+        client_secret_label = QLabel("Client Secret:")
+        client_secret_label.setStyleSheet(
+            f"QLabel {{ color: {Theme.TEXT_PRIMARY}; font-size: {Theme.FONT_SIZE_SM}px; }}"
+        )
+
+        client_secret_row = QHBoxLayout()
+        client_secret_row.setSpacing(Theme.SPACING_SM)
+
         self.spotify_client_secret_input = QLineEdit()
         self.spotify_client_secret_input.setPlaceholderText(
             "Enter your Spotify Client Secret"
         )
         self.spotify_client_secret_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.spotify_client_secret_input.setStyleSheet(Theme.input_style())
-        form_layout.addRow("Client Secret:", self.spotify_client_secret_input)
+        client_secret_row.addWidget(self.spotify_client_secret_input, stretch=1)
 
-        # Show/Hide Client Secret button
         show_secret_btn = QPushButton("Show")
-        show_secret_btn.setMaximumWidth(80)
+        show_secret_btn.setFixedWidth(60)
         show_secret_btn.setCheckable(True)
         show_secret_btn.setStyleSheet(
-            Theme.button_style(
-                Theme.SECONDARY,
-                Theme.SECONDARY_HOVER,
-                Theme.SECONDARY_PRESSED,
-                height=Theme.INPUT_HEIGHT - 8,
-            )
+            f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Theme.TEXT_SECONDARY};
+                border: 1px solid {Theme.BORDER_MEDIUM};
+                border-radius: {Theme.RADIUS_SM}px;
+                font-size: {Theme.FONT_SIZE_SM}px;
+                padding: 4px 8px;
+                min-height: 32px;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.BACKGROUND_HOVER};
+                border-color: {Theme.BORDER_DARK};
+            }}
+            QPushButton:checked {{
+                background-color: {Theme.BACKGROUND_TERTIARY};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
         )
         show_secret_btn.toggled.connect(
-            lambda checked: self.spotify_client_secret_input.setEchoMode(
-                QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+            lambda checked: (
+                self.spotify_client_secret_input.setEchoMode(
+                    QLineEdit.EchoMode.Normal
+                    if checked
+                    else QLineEdit.EchoMode.Password
+                ),
+                show_secret_btn.setText("Hide" if checked else "Show"),
             )
         )
-        form_layout.addRow("", show_secret_btn)
+        client_secret_row.addWidget(show_secret_btn)
+
+        form_layout.addRow(client_secret_label, client_secret_row)
 
         layout.addLayout(form_layout)
 
@@ -276,7 +384,9 @@ class SettingsPanel(QDialog):
         test_button_layout.addStretch()
         self.test_credentials_button = QPushButton("  Test Credentials")
         # Add a checkmark icon
-        check_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogApplyButton)
+        check_icon = self.style().standardIcon(
+            QStyle.StandardPixmap.SP_DialogApplyButton
+        )
         self.test_credentials_button.setIcon(check_icon)
         self.test_credentials_button.clicked.connect(self._on_test_credentials)
         self.test_credentials_button.setStyleSheet(
@@ -290,10 +400,18 @@ class SettingsPanel(QDialog):
         test_button_layout.addWidget(self.test_credentials_button)
         layout.addLayout(test_button_layout)
 
+        # Inline credential validation status label (hidden until first test)
+        self.credentials_status_label = QLabel("")
+        self.credentials_status_label.setWordWrap(True)
+        self.credentials_status_label.hide()
+        layout.addWidget(self.credentials_status_label)
+
         # Link to Spotify Developer Dashboard
         link_layout = QHBoxLayout()
         link_label = QLabel(
-            '<a href="https://developer.spotify.com/dashboard" style="color: ' + Theme.PRIMARY + ';">🔗 Open Spotify Developer Dashboard</a>'
+            '<a href="https://developer.spotify.com/dashboard" style="color: '
+            + Theme.PRIMARY
+            + ';">🔗 Open Spotify Developer Dashboard</a>'
         )
         link_label.setOpenExternalLinks(True)
         link_label.setStyleSheet(
@@ -341,34 +459,61 @@ class SettingsPanel(QDialog):
             self.output_dir_input.setText(selected_dir)
 
     def _on_test_credentials(self) -> None:
-        """Test Spotify credentials."""
+        """Test Spotify credentials using inline status feedback."""
         client_id = self.spotify_client_id_input.text().strip()
         client_secret = self.spotify_client_secret_input.text().strip()
 
         if not client_id or not client_secret:
-            QMessageBox.warning(
-                self,
-                "Missing Credentials",
-                "Please enter both Client ID and Client Secret before testing.",
+            self._show_credentials_error(
+                "Please enter both Client ID and Client Secret before testing."
             )
             return
 
         # Basic validation (check they're not empty and look like valid IDs)
         if len(client_id) < 10 or len(client_secret) < 10:
-            QMessageBox.warning(
-                self,
-                "Invalid Credentials",
-                "Client ID and Client Secret seem too short. Please check your credentials.",
+            self._show_credentials_error(
+                "Client ID and Client Secret seem too short. "
+                "Please check your credentials."
             )
             return
 
         # Show success message (actual API validation would require network call)
-        QMessageBox.information(
-            self,
-            "Credentials Valid",
-            "Credentials format looks valid!\n\n"
-            "Note: Full validation will occur when you first download a Spotify track.",
+        self._show_credentials_success(
+            "Credentials format looks valid! "
+            "Full validation will occur when you first download a Spotify track."
         )
+
+    def _show_credentials_error(self, message: str) -> None:
+        """Display an inline error message below the Test Credentials button."""
+        self.credentials_status_label.setText(f"\u2717 {message}")
+        self.credentials_status_label.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.ERROR};
+                background-color: {Theme.ERROR_LIGHT};
+                font-size: {Theme.FONT_SIZE_SM}px;
+                padding: 8px 12px;
+                border-radius: {Theme.RADIUS_SM}px;
+            }}
+            """
+        )
+        self.credentials_status_label.show()
+
+    def _show_credentials_success(self, message: str) -> None:
+        """Display an inline success message below the Test Credentials button."""
+        self.credentials_status_label.setText(f"\u2713 {message}")
+        self.credentials_status_label.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {Theme.SUCCESS};
+                background-color: {Theme.SUCCESS_LIGHT};
+                font-size: {Theme.FONT_SIZE_SM}px;
+                padding: 8px 12px;
+                border-radius: {Theme.RADIUS_SM}px;
+            }}
+            """
+        )
+        self.credentials_status_label.show()
 
     def _on_save_clicked(self) -> None:
         """Handle save button click."""

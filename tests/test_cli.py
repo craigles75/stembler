@@ -101,9 +101,15 @@ class TestCLI:
 
         # Mock other components
         with (
-            patch("music_stem_separator.shared.process_track.StemSeparator") as mock_sep,
-            patch("music_stem_separator.shared.process_track.StemProcessor") as mock_proc,
-            patch("music_stem_separator.shared.process_track.OutputManager") as mock_output,
+            patch(
+                "music_stem_separator.shared.process_track.StemSeparator"
+            ) as mock_sep,
+            patch(
+                "music_stem_separator.shared.process_track.StemProcessor"
+            ) as mock_proc,
+            patch(
+                "music_stem_separator.shared.process_track.OutputManager"
+            ) as mock_output,
         ):
 
             mock_sep.return_value.separate_stems.return_value = {
@@ -121,7 +127,9 @@ class TestCLI:
                 "success": True,
                 "output_structure": {"track_dir": "/tmp/output/test"},
             }
-            mock_output.return_value.generate_metadata.return_value = {"test": "metadata"}
+            mock_output.return_value.generate_metadata.return_value = {
+                "test": "metadata"
+            }
             mock_output.return_value.save_metadata.return_value = {"success": True}
             mock_output.return_value.create_summary_report.return_value = "Test report"
             mock_output.return_value.get_output_summary.return_value = {
@@ -138,7 +146,9 @@ class TestCLI:
         """Test CLI with invalid input."""
         runner = CliRunner()
 
-        with patch("music_stem_separator.shared.process_track.InputProcessor") as mock_input_processor:
+        with patch(
+            "music_stem_separator.shared.process_track.InputProcessor"
+        ) as mock_input_processor:
             mock_input = Mock()
             mock_input_processor.return_value = mock_input
             mock_input.process_input.return_value = {
@@ -156,8 +166,12 @@ class TestCLI:
         runner = CliRunner()
 
         with (
-            patch("music_stem_separator.shared.process_track.InputProcessor") as mock_input_processor,
-            patch("music_stem_separator.shared.process_track.StemSeparator") as mock_separator,
+            patch(
+                "music_stem_separator.shared.process_track.InputProcessor"
+            ) as mock_input_processor,
+            patch(
+                "music_stem_separator.shared.process_track.StemSeparator"
+            ) as mock_separator,
         ):
 
             mock_input = Mock()
@@ -173,8 +187,12 @@ class TestCLI:
             mock_sep.separate_stems.return_value = {"success": True, "stems": {}}
 
             with (
-                patch("music_stem_separator.shared.process_track.StemProcessor") as mock_proc,
-                patch("music_stem_separator.shared.process_track.OutputManager") as mock_output,
+                patch(
+                    "music_stem_separator.shared.process_track.StemProcessor"
+                ) as mock_proc,
+                patch(
+                    "music_stem_separator.shared.process_track.OutputManager"
+                ) as mock_output,
             ):
 
                 mock_proc.return_value.process_stem_files.return_value = {
@@ -188,9 +206,13 @@ class TestCLI:
                     "success": True,
                     "output_structure": {"track_dir": "/tmp/output/test"},
                 }
-                mock_output.return_value.generate_metadata.return_value = {"test": "metadata"}
+                mock_output.return_value.generate_metadata.return_value = {
+                    "test": "metadata"
+                }
                 mock_output.return_value.save_metadata.return_value = {"success": True}
-                mock_output.return_value.create_summary_report.return_value = "Test report"
+                mock_output.return_value.create_summary_report.return_value = (
+                    "Test report"
+                )
                 mock_output.return_value.get_output_summary.return_value = {
                     "track_directory": "/tmp/output/test",
                     "total_files": 4,
@@ -209,8 +231,12 @@ class TestCLI:
         runner = CliRunner()
 
         with (
-            patch("music_stem_separator.shared.process_track.InputProcessor") as mock_input_processor,
-            patch("music_stem_separator.shared.process_track.OutputManager") as mock_output_manager,
+            patch(
+                "music_stem_separator.shared.process_track.InputProcessor"
+            ) as mock_input_processor,
+            patch(
+                "music_stem_separator.shared.process_track.OutputManager"
+            ) as mock_output_manager,
         ):
 
             mock_input = Mock()
@@ -225,8 +251,12 @@ class TestCLI:
             mock_output_manager.return_value = mock_output
 
             with (
-                patch("music_stem_separator.shared.process_track.StemSeparator") as mock_sep,
-                patch("music_stem_separator.shared.process_track.StemProcessor") as mock_proc,
+                patch(
+                    "music_stem_separator.shared.process_track.StemSeparator"
+                ) as mock_sep,
+                patch(
+                    "music_stem_separator.shared.process_track.StemProcessor"
+                ) as mock_proc,
             ):
 
                 mock_sep.return_value.separate_stems.return_value = {
@@ -264,7 +294,9 @@ class TestCLI:
         """Test CLI with enhancement disabled."""
         runner = CliRunner()
 
-        with patch("music_stem_separator.shared.process_track.StemProcessor") as mock_stem_processor:
+        with patch(
+            "music_stem_separator.shared.process_track.StemProcessor"
+        ) as mock_stem_processor:
             mock_proc = Mock()
             mock_stem_processor.return_value = mock_proc
 
@@ -272,8 +304,12 @@ class TestCLI:
                 patch(
                     "music_stem_separator.shared.process_track.InputProcessor"
                 ) as mock_input_processor,
-                patch("music_stem_separator.shared.process_track.StemSeparator") as mock_sep,
-                patch("music_stem_separator.shared.process_track.OutputManager") as mock_output,
+                patch(
+                    "music_stem_separator.shared.process_track.StemSeparator"
+                ) as mock_sep,
+                patch(
+                    "music_stem_separator.shared.process_track.OutputManager"
+                ) as mock_output,
             ):
 
                 mock_input_processor.return_value.process_input.return_value = {
@@ -290,9 +326,13 @@ class TestCLI:
                     "success": True,
                     "output_structure": {"track_dir": "/tmp/output/test"},
                 }
-                mock_output.return_value.generate_metadata.return_value = {"test": "metadata"}
+                mock_output.return_value.generate_metadata.return_value = {
+                    "test": "metadata"
+                }
                 mock_output.return_value.save_metadata.return_value = {"success": True}
-                mock_output.return_value.create_summary_report.return_value = "Test report"
+                mock_output.return_value.create_summary_report.return_value = (
+                    "Test report"
+                )
                 mock_output.return_value.get_output_summary.return_value = {
                     "track_directory": "/tmp/output/test",
                     "total_files": 4,
@@ -309,7 +349,9 @@ class TestCLI:
         """Test CLI verbose mode."""
         runner = CliRunner()
 
-        with patch("music_stem_separator.shared.process_track.InputProcessor") as mock_input_processor:
+        with patch(
+            "music_stem_separator.shared.process_track.InputProcessor"
+        ) as mock_input_processor:
             mock_input_processor.return_value.process_input.return_value = {
                 "success": False,
                 "error": "Test error",

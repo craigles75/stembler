@@ -14,53 +14,58 @@ class Theme:
     # ==================== COLORS ====================
 
     # Background Colors
-    BACKGROUND_PRIMARY = "#FFFFFF"      # Pure white for main background
-    BACKGROUND_SECONDARY = "#F8F9FA"    # Slight gray for cards/panels
-    BACKGROUND_TERTIARY = "#F0F2F5"     # Lighter gray for input backgrounds
-    BACKGROUND_HOVER = "#F5F7FA"        # Hover state background
+    BACKGROUND_PRIMARY = "#FFFFFF"  # Pure white for main background
+    BACKGROUND_SECONDARY = "#F8F9FA"  # Slight gray for cards/panels
+    BACKGROUND_TERTIARY = "#F0F2F5"  # Lighter gray for input backgrounds
+    BACKGROUND_HOVER = "#F5F7FA"  # Hover state background
 
     # Primary Colors (Spotify-inspired green)
-    PRIMARY = "#1DB954"                 # Primary actions, success, progress
-    PRIMARY_HOVER = "#1ED760"           # Brighter on hover
-    PRIMARY_PRESSED = "#1AA34A"         # Darker on press
-    PRIMARY_LIGHT = "#F0F9F4"           # Very light green for backgrounds
+    PRIMARY = "#1DB954"  # Primary actions, success, progress
+    PRIMARY_HOVER = "#1ED760"  # Brighter on hover
+    PRIMARY_PRESSED = "#1AA34A"  # Darker on press
+    PRIMARY_LIGHT = "#F0F9F4"  # Very light green for backgrounds
 
     # Secondary Colors
-    SECONDARY = "#535353"               # Dark gray for secondary actions
-    SECONDARY_HOVER = "#3E3E3E"         # Darker on hover
-    SECONDARY_PRESSED = "#2A2A2A"       # Even darker on press
+    SECONDARY = "#535353"  # Dark gray for secondary actions
+    SECONDARY_HOVER = "#3E3E3E"  # Darker on hover
+    SECONDARY_PRESSED = "#2A2A2A"  # Even darker on press
+
+    # Accent Colors (blue — secondary interactive elements: Browse, focus rings)
+    ACCENT = "#3B82F6"  # Accent actions (Browse button, focus borders)
+    ACCENT_HOVER = "#2563EB"  # Darker on hover
+    ACCENT_PRESSED = "#1D4ED8"  # Darker on press
 
     # Semantic Colors
-    ERROR = "#E22134"                   # Error states, cancel
-    ERROR_LIGHT = "#FFEBEE"             # Light error background
-    SUCCESS = "#1DB954"                 # Success states (same as primary)
-    SUCCESS_LIGHT = "#F0F9F4"           # Light success background
-    WARNING = "#FF9800"                 # Warning states
-    INFO = "#2196F3"                    # Info states
+    ERROR = "#E22134"  # Error states, cancel
+    ERROR_LIGHT = "#FFEBEE"  # Light error background
+    SUCCESS = "#1DB954"  # Success states (same as primary)
+    SUCCESS_LIGHT = "#F0F9F4"  # Light success background
+    WARNING = "#FF9800"  # Warning states
+    INFO = "#2196F3"  # Info states
 
     # Text Colors
-    TEXT_PRIMARY = "#121212"            # Almost black for main text
-    TEXT_SECONDARY = "#6A6A6A"          # Medium gray for supporting text
-    TEXT_TERTIARY = "#9B9B9B"           # Light gray for hints/placeholders
-    TEXT_DISABLED = "#BDBDBD"           # Disabled text
-    TEXT_ON_PRIMARY = "#FFFFFF"         # White text on colored backgrounds
-    TEXT_ON_ERROR = "#FFFFFF"           # White text on error backgrounds
+    TEXT_PRIMARY = "#121212"  # Almost black for main text
+    TEXT_SECONDARY = "#6A6A6A"  # Medium gray for supporting text
+    TEXT_TERTIARY = "#9B9B9B"  # Light gray for hints/placeholders
+    TEXT_DISABLED = "#BDBDBD"  # Disabled text
+    TEXT_ON_PRIMARY = "#FFFFFF"  # White text on colored backgrounds
+    TEXT_ON_ERROR = "#FFFFFF"  # White text on error backgrounds
 
     # Border Colors
-    BORDER_LIGHT = "#E5E5E5"            # Subtle borders
-    BORDER_MEDIUM = "#D1D1D1"           # Visible borders
-    BORDER_DARK = "#9E9E9E"             # Strong borders
-    BORDER_FOCUS = PRIMARY               # Focus state borders
+    BORDER_LIGHT = "#E5E5E5"  # Subtle borders
+    BORDER_MEDIUM = "#D1D1D1"  # Visible borders
+    BORDER_DARK = "#9E9E9E"  # Strong borders
+    BORDER_FOCUS = ACCENT  # Focus state borders (blue, not green)
 
     # ==================== SPACING ====================
     # Following 8px grid system for consistent rhythm
 
-    SPACING_XS = 4      # 4px - Tight spacing
-    SPACING_SM = 8      # 8px - Small gaps
-    SPACING_MD = 16     # 16px - Default spacing
-    SPACING_LG = 24     # 24px - Section spacing
-    SPACING_XL = 32     # 32px - Large margins
-    SPACING_XXL = 48    # 48px - Extra large spacing
+    SPACING_XS = 4  # 4px - Tight spacing
+    SPACING_SM = 8  # 8px - Small gaps
+    SPACING_MD = 16  # 16px - Default spacing
+    SPACING_LG = 24  # 24px - Section spacing
+    SPACING_XL = 32  # 32px - Large margins
+    SPACING_XXL = 48  # 48px - Extra large spacing
 
     # ==================== SHADOWS ====================
     # Subtle shadows for depth without being heavy-handed
@@ -72,14 +77,14 @@ class Theme:
 
     # Special shadows
     SHADOW_FOCUS = f"0 0 0 3px {PRIMARY}40"  # Primary color at 25% opacity
-    SHADOW_GLOW = f"0 0 8px {PRIMARY}4D"     # Glow effect (30% opacity)
+    SHADOW_GLOW = f"0 0 8px {PRIMARY}4D"  # Glow effect (30% opacity)
 
     # ==================== BORDER RADIUS ====================
 
-    RADIUS_SM = 6       # Small elements (chips, tags)
-    RADIUS_MD = 10      # Medium elements (buttons, inputs)
-    RADIUS_LG = 16      # Large elements (cards, containers)
-    RADIUS_XL = 20      # Extra large (dialogs)
+    RADIUS_SM = 6  # Small elements (chips, tags)
+    RADIUS_MD = 10  # Medium elements (buttons, inputs)
+    RADIUS_LG = 16  # Large elements (cards, containers)
+    RADIUS_XL = 20  # Extra large (dialogs)
     RADIUS_FULL = 9999  # Fully rounded (pills)
 
     # ==================== TYPOGRAPHY ====================
@@ -89,11 +94,11 @@ class Theme:
     FONT_FAMILY_MONO = "'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace"
 
     # Font Sizes
-    FONT_SIZE_XS = 11   # Captions, hints
-    FONT_SIZE_SM = 13   # Labels, helper text
-    FONT_SIZE_MD = 15   # Body text, buttons
-    FONT_SIZE_LG = 18   # Subheadings
-    FONT_SIZE_XL = 24   # Headings
+    FONT_SIZE_XS = 11  # Captions, hints
+    FONT_SIZE_SM = 13  # Labels, helper text
+    FONT_SIZE_MD = 15  # Body text, buttons
+    FONT_SIZE_LG = 18  # Subheadings
+    FONT_SIZE_XL = 24  # Headings
     FONT_SIZE_XXL = 32  # Large headings
 
     # Font Weights
@@ -160,7 +165,7 @@ class Theme:
         pressed_color: str,
         text_color: str = None,
         height: int = None,
-        add_shadow: bool = True
+        add_shadow: bool = True,
     ) -> str:
         """Generate consistent button stylesheet.
 
@@ -202,11 +207,7 @@ class Theme:
         """
 
     @staticmethod
-    def card_style(
-        padding: int = None,
-        radius: int = None,
-        shadow: str = None
-    ) -> str:
+    def card_style(padding: int = None, radius: int = None, shadow: str = None) -> str:
         """Generate consistent card/container stylesheet.
 
         Args:
@@ -263,11 +264,7 @@ class Theme:
         """
 
     @staticmethod
-    def label_style(
-        size: int = None,
-        color: str = None,
-        weight: str = None
-    ) -> str:
+    def label_style(size: int = None, color: str = None, weight: str = None) -> str:
         """Generate consistent label stylesheet.
 
         Args:
@@ -293,21 +290,19 @@ class Theme:
 
 # Convenience constants for common use cases
 PRIMARY_BUTTON = Theme.button_style(
-    Theme.PRIMARY,
-    Theme.PRIMARY_HOVER,
-    Theme.PRIMARY_PRESSED
+    Theme.PRIMARY, Theme.PRIMARY_HOVER, Theme.PRIMARY_PRESSED
 )
 
 SECONDARY_BUTTON = Theme.button_style(
-    Theme.SECONDARY,
-    Theme.SECONDARY_HOVER,
-    Theme.SECONDARY_PRESSED
+    Theme.SECONDARY, Theme.SECONDARY_HOVER, Theme.SECONDARY_PRESSED
+)
+
+ACCENT_BUTTON = Theme.button_style(
+    Theme.ACCENT, Theme.ACCENT_HOVER, Theme.ACCENT_PRESSED
 )
 
 ERROR_BUTTON = Theme.button_style(
-    Theme.ERROR,
-    "#D32F2F",  # Darker red on hover
-    "#B71C1C"   # Even darker on press
+    Theme.ERROR, "#D32F2F", "#B71C1C"  # Darker red on hover  # Even darker on press
 )
 
 CARD_DEFAULT = Theme.card_style()

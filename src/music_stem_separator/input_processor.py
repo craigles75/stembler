@@ -73,6 +73,7 @@ class InputProcessor:
         """Check if input is a URL."""
         try:
             from urllib.parse import urlparse
+
             result = urlparse(input_str)
             return all([result.scheme, result.netloc])
         except Exception:
@@ -171,12 +172,18 @@ class InputProcessor:
 
             # Check if it's an audio URL
             if not self.url_downloader.is_audio_url(url):
-                return {"valid": False, "error": "URL does not appear to be an audio file"}
+                return {
+                    "valid": False,
+                    "error": "URL does not appear to be an audio file",
+                }
 
             # Get file info
             file_info = self.url_downloader.get_file_info(url)
             if not file_info["valid"]:
-                return {"valid": False, "error": f"Could not access URL: {file_info.get('error', 'Unknown error')}"}
+                return {
+                    "valid": False,
+                    "error": f"Could not access URL: {file_info.get('error', 'Unknown error')}",
+                }
 
             return {
                 "valid": True,
@@ -351,6 +358,6 @@ class InputProcessor:
         """
         if self.spotify_handler:
             self.spotify_handler.cleanup_temp_files(file_paths)
-        
+
         if self.url_downloader:
             self.url_downloader.cleanup_temp_files(file_paths)

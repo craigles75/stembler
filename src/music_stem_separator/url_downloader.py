@@ -26,7 +26,7 @@ class URLDownloader:
         """
         self.timeout = timeout
         self.max_retries = max_retries
-        
+
         # Set up session with retry strategy
         self.session = requests.Session()
         retry_strategy = Retry(
@@ -37,13 +37,17 @@ class URLDownloader:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
-        
-        # Set user agent to avoid blocking
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        })
 
-        logger.info(f"Initialized URLDownloader with timeout: {timeout}s, max_retries: {max_retries}")
+        # Set user agent to avoid blocking
+        self.session.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+        )
+
+        logger.info(
+            f"Initialized URLDownloader with timeout: {timeout}s, max_retries: {max_retries}"
+        )
 
     def is_valid_url(self, url: str) -> bool:
         """
@@ -75,30 +79,41 @@ class URLDownloader:
             return False
 
         # Check file extension
-        audio_extensions = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.wma'}
+        audio_extensions = {".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".wma"}
         parsed_url = urlparse(url)
         path = Path(parsed_url.path)
-        
+
         if path.suffix.lower() in audio_extensions:
             return True
 
         # Check content type by making a HEAD request
         try:
-            response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
-            content_type = response.headers.get('content-type', '').lower()
-            
+            response = self.session.head(
+                url, timeout=self.timeout, allow_redirects=True
+            )
+            content_type = response.headers.get("content-type", "").lower()
+
             audio_types = {
-                'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/flac',
-                'audio/mp4', 'audio/aac', 'audio/ogg', 'audio/x-wav',
-                'audio/wave', 'audio/x-m4a'
+                "audio/mpeg",
+                "audio/mp3",
+                "audio/wav",
+                "audio/flac",
+                "audio/mp4",
+                "audio/aac",
+                "audio/ogg",
+                "audio/x-wav",
+                "audio/wave",
+                "audio/x-m4a",
             }
-            
+
             return any(audio_type in content_type for audio_type in audio_types)
         except Exception as e:
             logger.debug(f"Could not check content type for {url}: {e}")
             return False
 
-    def download_file(self, url: str, output_dir: str, filename: Optional[str] = None) -> Dict:
+    def download_file(
+        self, url: str, output_dir: str, filename: Optional[str] = None
+    ) -> Dict:
         """
         Download an audio file from a URL.
 
@@ -139,22 +154,24 @@ class URLDownloader:
             response.raise_for_status()
 
             # Get file size if available
-            file_size = int(response.headers.get('content-length', 0))
+            file_size = int(response.headers.get("content-length", 0))
             if file_size > 0:
                 logger.info(f"File size: {file_size / (1024*1024):.1f} MB")
 
             # Download with progress
             downloaded = 0
-            with open(output_path, 'wb') as f:
+            with open(output_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
                         downloaded += len(chunk)
-                        
+
                         if file_size > 0:
                             progress = (downloaded / file_size) * 100
                             if downloaded % (1024 * 1024) == 0:  # Log every MB
-                                logger.debug(f"Downloaded: {downloaded / (1024*1024):.1f} MB ({progress:.1f}%)")
+                                logger.debug(
+                                    f"Downloaded: {downloaded / (1024*1024):.1f} MB ({progress:.1f}%)"
+                                )
 
             # Verify file was downloaded
             if not output_path.exists() or output_path.stat().st_size == 0:
@@ -174,11 +191,7 @@ class URLDownloader:
 
         except Exception as e:
             logger.error(f"URL download failed: {str(e)}")
-            return {
-                "success": False,
-                "url": url,
-                "error": str(e)
-            }
+            return {"success": False, "url": url, "error": str(e)}
 
     def get_file_info(self, url: str) -> Dict:
         """
@@ -194,11 +207,13 @@ class URLDownloader:
             if not self.is_valid_url(url):
                 return {"valid": False, "error": "Invalid URL"}
 
-            response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
+            response = self.session.head(
+                url, timeout=self.timeout, allow_redirects=True
+            )
             response.raise_for_status()
 
-            content_type = response.headers.get('content-type', '')
-            content_length = response.headers.get('content-length')
+            content_type = response.headers.get("content-type", "")
+            content_length = response.headers.get("content-length")
             file_size = int(content_length) if content_length else 0
 
             return {
@@ -207,7 +222,7 @@ class URLDownloader:
                 "content_type": content_type,
                 "file_size": file_size,
                 "file_size_mb": file_size / (1024 * 1024) if file_size > 0 else 0,
-                "is_audio": self.is_audio_url(url)
+                "is_audio": self.is_audio_url(url),
             }
 
         except Exception as e:

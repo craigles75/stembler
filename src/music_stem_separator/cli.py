@@ -8,6 +8,7 @@ import click
 
 from . import __version__
 from .shared.process_track import process_track
+
 # Keep these imports for backward compatibility with existing tests
 from .input_processor import InputProcessor  # noqa: F401
 from .separator import StemSeparator  # noqa: F401

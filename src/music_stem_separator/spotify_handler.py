@@ -32,7 +32,7 @@ class SpotifyHandler:
         # Get Spotify credentials from environment variables
         self.client_id = os.getenv("SPOTIFY_CLIENT_ID")
         self.client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-        
+
         if not self.client_id or not self.client_secret:
             raise ValueError(
                 "Spotify credentials not found. Please set SPOTIFY_CLIENT_ID and "
@@ -44,7 +44,10 @@ class SpotifyHandler:
         self.settings = {
             "output_format": output_format,
             "bitrate": quality,
-            "audio_providers": ["youtube-music", "youtube"],  # YouTube Music primary, YouTube as fallback
+            "audio_providers": [
+                "youtube-music",
+                "youtube",
+            ],  # YouTube Music primary, YouTube as fallback
         }
 
         logger.info(
@@ -130,7 +133,7 @@ class SpotifyHandler:
             spotdl = Spotdl(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                downloader_settings=downloader_settings
+                downloader_settings=downloader_settings,
             )
 
             # Download the track
@@ -156,7 +159,10 @@ class SpotifyHandler:
 
         except Exception as e:
             error_msg = str(e)
-            if "No results found" in error_msg or "Requested format is not available" in error_msg:
+            if (
+                "No results found" in error_msg
+                or "Requested format is not available" in error_msg
+            ):
                 error_msg = (
                     f"Song with track ID '{track_id}' is not available for download due to copyright restrictions "
                     "or is blocked on all audio platforms. Try a different song or use a local MP3 file instead."

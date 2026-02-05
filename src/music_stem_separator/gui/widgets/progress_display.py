@@ -16,8 +16,26 @@ from ..utils.theme import Theme
 class ProgressDisplay(QWidget):
     """Widget to display processing progress with ETA."""
 
+    # Ordered pipeline stages as seen by the user.  Each entry is
+    # (display_name, set_of_raw_stage_keys).  The raw keys are the strings
+    # emitted by process_track via the progress callback.
+    #
+    # Step 1 label is swapped at runtime: "Downloading" when the input
+    # requires a download, "Loading Audio" otherwise.
+    _STAGES: list[tuple[str, set[str]]] = [
+        ("Loading Audio", {"input_processing", "downloading"}),
+        ("Separating Stems", {"loading_model", "separating_stems"}),
+        ("Writing Files", {"enhancing_audio", "organizing_output"}),
+        ("Complete", {"complete"}),
+    ]
+
+    # Total number of user-visible steps (cached to avoid recomputing)
+    _TOTAL_STEPS: int = len(_STAGES)
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        # Whether the current job involves a download (affects step-1 label)
+        self._is_download: bool = False
         self._setup_ui()
         # Set size policy to collapse when hidden
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
@@ -153,10 +171,9 @@ class ProgressDisplay(QWidget):
         self.percentage_label.setText(f"{percent}%")
         self.status_label.setText(message)
 
-        # Update stage label
+        # Update stage label with step indicator
         if stage:
-            stage_text = self._format_stage(stage)
-            self.stage_label.setText(f"Stage: {stage_text}")
+            self.stage_label.setText(self._format_stage(stage))
         else:
             self.stage_label.setText("")
 
@@ -170,8 +187,20 @@ class ProgressDisplay(QWidget):
             self.eta_label.setText("")
 
     def _format_stage(self, stage: str) -> str:
-        """Format stage name for display."""
-        # Convert snake_case to Title Case
+        """Return a 'Step N of M: Name' string for the given raw stage key.
+
+        Falls back to a Title-Cased version of the raw key when the stage
+        is not recognised (e.g. "error" or any future stage added to the
+        pipeline without a corresponding _STAGES entry).
+        """
+        for step_number, (display_name, keys) in enumerate(self._STAGES, start=1):
+            if stage in keys:
+                # Swap step-1 label when the job is a download
+                if step_number == 1 and self._is_download:
+                    display_name = "Downloading"
+                return f"Step {step_number} of {self._TOTAL_STEPS}: {display_name}"
+
+        # Unrecognised stage -- render gracefully without a step number
         return stage.replace("_", " ").title()
 
     def _format_eta(self, seconds: int) -> str:
@@ -196,14 +225,15 @@ class ProgressDisplay(QWidget):
         Args:
             is_download: If True, show downloading message
         """
+        self._is_download = is_download
         self.progress_bar.setValue(0)
         self.percentage_label.setText("0%")
         if is_download:
             self.status_label.setText("Downloading from Spotify...")
-            self.stage_label.setText("This may take a moment")
+            self.stage_label.setText(f"Step 1 of {self._TOTAL_STEPS}: Downloading")
         else:
             self.status_label.setText("Starting...")
-            self.stage_label.setText("")
+            self.stage_label.setText(f"Step 1 of {self._TOTAL_STEPS}: Loading Audio")
         self.eta_label.setText("")
         self.show()
 
@@ -212,14 +242,48 @@ class ProgressDisplay(QWidget):
         self.progress_bar.setValue(100)
         self.percentage_label.setText("100%")
         self.status_label.setText("✓ Processing Complete!")
-        self.stage_label.setText("")
+        self.stage_label.setText(
+            f"Step {self._TOTAL_STEPS} of {self._TOTAL_STEPS}: Complete"
+        )
         self.eta_label.setText("✓ Complete!")
 
-        # Update styling for completion
+        # Re-apply explicit stylesheets to every visible label.  PyQt6 QFrame
+        # background cascades can suppress child colours that were set before
+        # the frame was re-styled; painting them again here guarantees they
+        # are visible in the completion state.  status_label uses TEXT_PRIMARY
+        # (dark) for contrast; the green accent is carried by percentage_label
+        # and eta_label instead.
         self.status_label.setStyleSheet(
             f"""
             QLabel {{
                 font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
+        )
+        self.percentage_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: 20px;
+                font-weight: {Theme.FONT_WEIGHT_BOLD};
+                color: {Theme.SUCCESS};
+            }}
+            """
+        )
+        self.stage_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_SM}px;
+                color: {Theme.TEXT_SECONDARY};
+                font-style: italic;
+            }}
+            """
+        )
+        self.eta_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_SM}px;
                 font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
                 color: {Theme.SUCCESS};
             }}
@@ -246,6 +310,18 @@ class ProgressDisplay(QWidget):
         self.progress_bar.setValue(0)
         self.percentage_label.setText("0%")
         self.status_label.setText("Preparing...")
+        # Restore default colour; complete_processing / error_processing mutate
+        # this stylesheet to green / red respectively.
+        self.status_label.setStyleSheet(
+            f"""
+            QLabel {{
+                font-size: {Theme.FONT_SIZE_MD}px;
+                font-weight: {Theme.FONT_WEIGHT_SEMIBOLD};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+            """
+        )
         self.stage_label.setText("")
         self.eta_label.setText("")
+        self._is_download = False
         self.hide()

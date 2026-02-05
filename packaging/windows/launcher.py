@@ -12,9 +12,11 @@ from pathlib import Path
 src_path = Path(__file__).parent.parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
-from PyQt6.QtWidgets import QApplication
-from music_stem_separator.gui.main_window import MainWindow
-from music_stem_separator.gui.utils.error_handler import install_error_handler
+from PyQt6.QtWidgets import QApplication  # noqa: E402
+from music_stem_separator.gui.main_window import MainWindow  # noqa: E402
+from music_stem_separator.gui.utils.error_handler import (  # noqa: E402
+    install_error_handler,
+)
 
 
 def main():

@@ -28,6 +28,7 @@ def generate_icons():
     try:
         import cairosvg
         from PIL import Image
+
         has_python_libs = True
     except ImportError:
         print("Warning: cairosvg or Pillow not installed.")
@@ -62,9 +63,9 @@ def generate_icons():
         # Save as .ico with all sizes
         ico_images[0].save(
             ico_path,
-            format='ICO',
+            format="ICO",
             sizes=[(img.width, img.height) for img in ico_images],
-            append_images=ico_images[1:]
+            append_images=ico_images[1:],
         )
         print(f"  Created: {ico_path}")
 
@@ -132,8 +133,7 @@ def _generate_icns(packaging_dir: Path, png_dir: Path) -> bool:
     # Convert to .icns
     icns_path = packaging_dir / "macos" / "icon.icns"
     subprocess.run(
-        ["iconutil", "-c", "icns", str(iconset_dir), "-o", str(icns_path)],
-        check=True
+        ["iconutil", "-c", "icns", str(iconset_dir), "-o", str(icns_path)], check=True
     )
 
     # Cleanup iconset directory

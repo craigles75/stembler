@@ -81,15 +81,15 @@ def _try_cx_freeze(project_root: Path, dist_dir: Path, version: str) -> bool:
         True if successful, False if cx_Freeze not available
     """
     try:
-        import cx_Freeze
-        from cx_Freeze import setup, Executable
+        import cx_Freeze  # noqa: F401
+        from cx_Freeze import setup, Executable  # noqa: F401
     except ImportError:
         return False
 
     print("[1/3] Building MSI with cx_Freeze...")
 
     # Create temporary setup.py for cx_Freeze
-    setup_content = f'''
+    setup_content = f"""
 from cx_Freeze import setup, Executable
 import sys
 
@@ -127,7 +127,7 @@ setup(
         )
     ],
 )
-'''
+"""
 
     setup_path = project_root / "setup_temp.py"
     setup_path.write_text(setup_content)
@@ -143,7 +143,7 @@ setup(
 
         print("[3/3] MSI creation complete!")
         print()
-        print(f"✓ MSI installer created:")
+        print("✓ MSI installer created:")
         print(f"  dist/Stembler-{version}-win64.msi")
         print()
 
@@ -169,7 +169,7 @@ def _try_wix(project_root: Path, dist_dir: Path, version: str) -> bool:
             ["candle", "-?"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            check=True
+            check=True,
         )
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False

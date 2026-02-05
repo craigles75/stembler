@@ -57,6 +57,7 @@ class TestStemSeparator:
         assert "stems" in result
 
         import os
+
         os.unlink(test_file)
 
     def test_separate_stems_failure(self):
