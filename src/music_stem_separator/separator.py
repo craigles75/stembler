@@ -77,29 +77,52 @@ class StemSeparator:
             logger.info(f"Separating stems for: {audio_file}")
             logger.info(f"Using model: {self.model_name}, device: {self.device}")
 
-            # Use Demucs for separation (using CLI-style approach)
-            import subprocess
-            import sys
+            # Use demucs as a library (not subprocess) to avoid spawning
+            # another app instance in PyInstaller bundles
+            from demucs.pretrained import get_model
+            from demucs.apply import apply_model
+            from demucs.audio import AudioFile, save_audio
 
-            cmd = [
-                sys.executable,
-                "-m",
-                "demucs.separate",
-                "--name",
-                self.model_name,
-                "--device",
-                self.device,
-                "--out",
-                str(output_dir),
-                str(audio_file),
-            ]
+            # Load model
+            logger.info(f"Loading model: {self.model_name}")
+            model = get_model(self.model_name)
+            model.to(self.device)
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            if result.returncode != 0:
-                raise Exception(f"Demucs separation failed: {result.stderr}")
+            # Load audio file
+            logger.info("Loading audio file...")
+            wav = AudioFile(audio_file).read(
+                streams=0,
+                samplerate=model.samplerate,
+                channels=model.audio_channels,
+            )
+            ref = wav.mean(0)
+            wav = (wav - ref.mean()) / ref.std()
+
+            # Apply separation model
+            logger.info("Running stem separation...")
+            with torch.no_grad():
+                sources = apply_model(
+                    model,
+                    wav[None].to(self.device),
+                    device=self.device,
+                    progress=False,
+                )[0]
+
+            # Denormalize
+            sources = sources * ref.std() + ref.mean()
+
+            # Save stems
+            track_name = audio_file.stem
+            stem_output_dir = output_dir / self.model_name / track_name
+            stem_output_dir.mkdir(parents=True, exist_ok=True)
+
+            logger.info(f"Saving stems to: {stem_output_dir}")
+            for stem_name, source in zip(model.sources, sources):
+                stem_path = stem_output_dir / f"{stem_name}.wav"
+                save_audio(source.cpu(), stem_path, model.samplerate)
+                logger.info(f"Saved: {stem_path}")
 
             # Get the stem file paths
-            track_name = audio_file.stem
             stem_paths = self.get_stem_paths(output_dir, track_name)
 
             return {
@@ -113,7 +136,10 @@ class StemSeparator:
             }
 
         except Exception as e:
+            import traceback
+
             logger.error(f"Stem separation failed: {str(e)}")
+            logger.error(f"Full traceback:\n{traceback.format_exc()}")
             return {"success": False, "audio_file": str(audio_file), "error": str(e)}
 
     def get_stem_paths(

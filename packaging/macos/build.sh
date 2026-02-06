@@ -51,53 +51,105 @@ uv pip install pyinstaller
 echo -e "${GREEN}[3/5]${NC} Cleaning previous builds..."
 rm -rf build/ dist/
 
-echo -e "${GREEN}[4/6]${NC} Building macOS executable..."
+echo -e "${GREEN}[4/7]${NC} Patching torch._numpy._ufuncs.py (Layer 2 defense)..."
+# Replace vars()[name] loop patterns that crash under PyInstaller bytecode
+# with dict-comprehension + globals().update() which survives compilation.
+UFUNCS_PATH=$(uv run python -c "
+import torch._numpy._ufuncs as m; print(m.__file__)
+" 2>/dev/null || true)
+
+UFUNCS_BACKUP=""
+if [ -n "$UFUNCS_PATH" ] && [ -f "$UFUNCS_PATH" ]; then
+    UFUNCS_BACKUP="${UFUNCS_PATH}.bak"
+    cp "$UFUNCS_PATH" "$UFUNCS_BACKUP"
+    echo "  Backed up: $UFUNCS_PATH"
+
+    uv run python -c "
+import re, sys
+
+path = sys.argv[1]
+with open(path) as f:
+    src = f.read()
+
+# Pattern: for name in <list>:\n    ufunc = getattr(<mod>, name)\n    vars()[name] = <wrapper>(ufunc)
+pattern = (
+    r'for name in (\w+):\s*\n'
+    r'\s+ufunc = getattr\((\w+), name\)\s*\n'
+    r'\s+vars\(\)\[name\] = (\w+)\(ufunc\)'
+)
+
+def replacer(m):
+    lst, mod, wrapper = m.group(1), m.group(2), m.group(3)
+    return (
+        f'globals().update({{\n'
+        f'    _n: {wrapper}(getattr({mod}, _n))\n'
+        f'    for _n in {lst}\n'
+        f'}})'
+    )
+
+new_src, count = re.subn(pattern, replacer, src)
+if count == 0:
+    print('WARNING: No vars()[name] patterns found to patch', file=sys.stderr)
+else:
+    print(f'  Patched {count} vars()[name] pattern(s)')
+with open(path, 'w') as f:
+    f.write(new_src)
+" "$UFUNCS_PATH"
+else
+    echo -e "  ${BLUE}(skipped — torch._numpy._ufuncs not found)${NC}"
+fi
+
+# Ensure backup is restored on exit (success or failure)
+cleanup_ufuncs() {
+    if [ -n "$UFUNCS_BACKUP" ] && [ -f "$UFUNCS_BACKUP" ]; then
+        mv "$UFUNCS_BACKUP" "$UFUNCS_PATH"
+        echo "  Restored original: $UFUNCS_PATH"
+    fi
+}
+trap cleanup_ufuncs EXIT
+
+echo -e "${GREEN}[5/7]${NC} Building macOS executable..."
 echo "This may take several minutes (especially on first build)..."
 echo
 
 # Run PyInstaller with the spec file
-# Note: May show FileExistsError for PyQt6 frameworks, but dist/Stembler/ is created successfully
+# The BUNDLE step produces dist/Stembler.app directly
 uv run pyinstaller packaging/macos/stembler.spec \
     --clean \
     --noconfirm 2>&1 | grep -v "FileExistsError.*Versions/Current/Resources" || true
 
-# Check if the executable was created (even if COLLECT failed)
-if [ -f "dist/Stembler/Stembler" ] && [ -x "dist/Stembler/Stembler" ]; then
+# Check if the .app bundle was created
+if [ -d "dist/Stembler.app" ] && [ -x "dist/Stembler.app/Contents/MacOS/Stembler" ]; then
     echo
-    echo -e "${GREEN}[5/6]${NC} Testing executable..."
+    echo -e "${GREEN}[6/7]${NC} Testing executable..."
 
-    # Test if it runs
-    timeout 3s ./dist/Stembler/Stembler --help > /dev/null 2>&1 && {
+    # Start the app and check it stays alive for 3 seconds
+    dist/Stembler.app/Contents/MacOS/Stembler &
+    STEM_PID=$!
+    sleep 3
+    if ps -p $STEM_PID > /dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Executable works!"
-    } || {
-        # Start and kill to test GUI launch
-        ./dist/Stembler/Stembler &
-        STEM_PID=$!
-        sleep 2
-        if ps -p $STEM_PID > /dev/null 2>&1; then
-            echo -e "${GREEN}✓${NC} Executable works!"
-            kill $STEM_PID 2>/dev/null
-        fi
-    }
+        kill $STEM_PID 2>/dev/null
+        wait $STEM_PID 2>/dev/null
+    else
+        echo -e "${RED}✗${NC} Executable exited immediately — check logs"
+    fi
 
-    echo -e "${GREEN}[6/6]${NC} Build successful!"
+    echo -e "${GREEN}[7/7]${NC} Build successful!"
     echo
     echo -e "${GREEN}✓${NC} Application created:"
-    echo -e "  ${BLUE}dist/Stembler/${NC} (directory containing executable)"
+    echo -e "  ${BLUE}dist/Stembler.app${NC} (signed .app bundle)"
     echo
     echo "To test the application:"
-    echo -e "  ${BLUE}./dist/Stembler/Stembler${NC}"
+    echo -e "  ${BLUE}open dist/Stembler.app${NC}"
     echo
     echo "To create a DMG installer:"
     echo -e "  ${BLUE}./packaging/macos/build_dmg.sh${NC}"
     echo
-    echo -e "${BLUE}Note:${NC} PyQt6 framework symlink issue prevents .app bundle creation"
-    echo "      The executable directory works perfectly for distribution"
-    echo
 else
     echo
     echo -e "${RED}✗${NC} Build failed!"
-    echo "Executable not found at dist/Stembler/Stembler"
+    echo ".app bundle not found at dist/Stembler.app"
     echo "Check the output above for errors."
     exit 1
 fi

@@ -34,11 +34,18 @@ class TestStemSeparator:
         assert not separator.is_supported_format("test.txt")
         assert not separator.is_supported_format("test")
 
-    @patch("subprocess.run")
-    def test_separate_stems_success(self, mock_run):
+    @patch("demucs.audio.save_audio")
+    @patch("demucs.apply.apply_model")
+    @patch("demucs.audio.AudioFile")
+    @patch("demucs.pretrained.get_model")
+    def test_separate_stems_success(
+        self, mock_get_model, mock_audio_file, mock_apply_model, mock_save_audio
+    ):
         """Test successful stem separation."""
         import tempfile
         from unittest.mock import MagicMock
+
+        import torch
 
         separator = StemSeparator()
 
@@ -47,11 +54,27 @@ class TestStemSeparator:
 
         output_dir = "/tmp/output"
 
-        mock_run.return_value = MagicMock(returncode=0, stderr="")
+        # Mock model with expected attributes
+        mock_model = MagicMock()
+        mock_model.samplerate = 44100
+        mock_model.audio_channels = 2
+        mock_model.sources = ["drums", "bass", "vocals", "other"]
+        mock_get_model.return_value = mock_model
+
+        # Mock audio loading: return a 2-channel tensor
+        mock_wav = torch.randn(2, 44100)
+        mock_reader = MagicMock()
+        mock_reader.read.return_value = mock_wav
+        mock_audio_file.return_value = mock_reader
+
+        # Mock apply_model: return tensor shaped [1, 4_stems, 2_channels, samples]
+        mock_sources = torch.randn(1, 4, 2, 44100)
+        mock_apply_model.return_value = mock_sources
 
         result = separator.separate_stems(test_file, output_dir)
 
-        mock_run.assert_called_once()
+        mock_get_model.assert_called_once_with("htdemucs")
+        mock_apply_model.assert_called_once()
         assert result["success"] is True
         assert result["output_dir"] == output_dir
         assert "stems" in result

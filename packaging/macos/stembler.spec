@@ -21,7 +21,9 @@ src_path = project_root / "src"
 
 # Application metadata
 app_name = "Stembler"
-app_version = "0.1.0"  # Read from pyproject.toml in production
+import tomllib
+with open(str(project_root / "pyproject.toml"), "rb") as _f:
+    app_version = tomllib.load(_f)["project"]["version"]
 bundle_identifier = "com.stembler.app"
 
 # Collect all GUI package data
@@ -39,6 +41,18 @@ pykakasi_datas = collect_data_files('pykakasi', include_py_files=False)
 
 # Collect scipy data (needed for signal processing)
 scipy_datas = collect_data_files('scipy', include_py_files=False)
+
+# Bundle ffmpeg/ffprobe (required by torchaudio/demucs for audio loading)
+# Use static builds from packaging/macos/bin/ (no external dependencies)
+ffmpeg_binaries = []
+ffmpeg_bin_dir = Path(SPECPATH) / 'bin'
+for binary_name in ['ffmpeg', 'ffprobe']:
+    binary_path = ffmpeg_bin_dir / binary_name
+    if binary_path.exists():
+        ffmpeg_binaries.append((str(binary_path), 'bin'))
+        print(f"Bundling {binary_name} from: {binary_path}")
+    else:
+        print(f"WARNING: {binary_name} not found at {binary_path}")
 
 # Hidden imports (packages not auto-detected)
 hidden_imports = [
@@ -68,17 +82,23 @@ hidden_imports += collect_submodules('demucs')
 hidden_imports += collect_submodules('scipy.signal')
 hidden_imports += collect_submodules('scipy.stats')
 hidden_imports += collect_submodules('scipy.sparse')
+# Additional demucs dependencies
+hidden_imports += collect_submodules('einops')
+hidden_imports += collect_submodules('openunmix')
+hidden_imports += collect_submodules('dora')
+hidden_imports += collect_submodules('torch')
+hidden_imports += collect_submodules('torchaudio')
 
 # Analysis: Scan and collect all dependencies
 a = Analysis(
     [str(Path(SPECPATH) / 'launcher.py')],
     pathex=[str(src_path)],
-    binaries=[],
+    binaries=ffmpeg_binaries,
     datas=gui_datas + pyqt6_datas + demucs_datas + pykakasi_datas + scipy_datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[str(Path(SPECPATH) / 'runtime_hook.py')],
     excludes=[
         # Exclude unnecessary packages to reduce size
         'tkinter',
@@ -100,6 +120,27 @@ a = Analysis(
         'PyQt6.QtQml',
         'PyQt6.QtQuick',
         'PyQt6.QtQuick3D',
+        # Layer 3: Exclude torch._numpy (stubs provided by runtime_hook.py).
+        # These modules contain vars()[name] loops that crash under PyInstaller
+        # bytecode compilation. Excluding them removes the crash source entirely.
+        'torch._numpy',
+        'torch._numpy._binary_ufuncs_impl',
+        'torch._numpy._casting_dicts',
+        'torch._numpy._dtypes',
+        'torch._numpy._dtypes_impl',
+        'torch._numpy._funcs',
+        'torch._numpy._funcs_impl',
+        'torch._numpy._getlimits',
+        'torch._numpy._ndarray',
+        'torch._numpy._normalizations',
+        'torch._numpy._reductions_impl',
+        'torch._numpy._ufuncs',
+        'torch._numpy._unary_ufuncs_impl',
+        'torch._numpy._util',
+        'torch._numpy.fft',
+        'torch._numpy.linalg',
+        'torch._numpy.random',
+        'torch._numpy.testing',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -137,11 +178,12 @@ exe = EXE(
 # Custom collection with symlink handling for PyQt6 framework issue
 import shutil
 
-# Pre-clean dist directory to avoid symlink conflicts
-dist_path = project_root / 'dist' / app_name
-if dist_path.exists():
-    print(f"Removing existing dist directory: {dist_path}")
-    shutil.rmtree(dist_path)
+# Pre-clean dist directories to avoid symlink conflicts
+for dist_name in [app_name, f'{app_name}.app']:
+    dist_path = project_root / 'dist' / dist_name
+    if dist_path.exists():
+        print(f"Removing existing dist directory: {dist_path}")
+        shutil.rmtree(dist_path)
 
 coll = COLLECT(
     exe,
@@ -154,40 +196,35 @@ coll = COLLECT(
     name=app_name,
 )
 
-# Note: BUNDLE target commented out due to PyQt6 framework symlink issues
-# To create .app manually: mkdir -p dist/Stembler.app/Contents/MacOS && cp -R dist/Stembler/* dist/Stembler.app/Contents/MacOS/
-# For now, run executable directly: ./dist/Stembler/Stembler
-
-# # BUNDLE: Create macOS .app bundle
-# app = BUNDLE(
-#     coll,
-#     name=f'{app_name}.app',
-#     icon=str(Path(SPECPATH) / 'icon.icns') if (Path(SPECPATH) / 'icon.icns').exists() else None,
-#     bundle_identifier=bundle_identifier,
-#     version=app_version,
-#     info_plist={
-#         'CFBundleName': app_name,
-#         'CFBundleDisplayName': app_name,
-#         'CFBundleGetInfoString': 'AI-powered music stem separation',
-#         'CFBundleIdentifier': bundle_identifier,
-#         'CFBundleVersion': app_version,
-#         'CFBundleShortVersionString': app_version,
-#         'NSHumanReadableCopyright': 'Copyright © 2026',
-#         'NSHighResolutionCapable': 'True',
-#         'LSMinimumSystemVersion': '10.13.0',  # macOS High Sierra
-#         # File associations for audio files
-#         'CFBundleDocumentTypes': [
-#             {
-#                 'CFBundleTypeName': 'Audio File',
-#                 'CFBundleTypeRole': 'Viewer',
-#                 'LSHandlerRank': 'Alternate',
-#                 'LSItemContentTypes': [
-#                     'public.mp3',
-#                     'public.mpeg-4-audio',
-#                     'com.microsoft.waveform-audio',
-#                     'public.audio',
-#                 ],
-#             },
-#         ],
-#     },
-# )
+# BUNDLE: Create macOS .app bundle
+app = BUNDLE(
+    coll,
+    name=f'{app_name}.app',
+    icon=str(Path(SPECPATH) / 'icon.icns') if (Path(SPECPATH) / 'icon.icns').exists() else None,
+    bundle_identifier=bundle_identifier,
+    version=app_version,
+    info_plist={
+        'CFBundleName': app_name,
+        'CFBundleDisplayName': app_name,
+        'CFBundleGetInfoString': 'AI-powered music stem separation',
+        'CFBundleIdentifier': bundle_identifier,
+        'CFBundleVersion': app_version,
+        'CFBundleShortVersionString': app_version,
+        'NSHumanReadableCopyright': 'Copyright © 2026',
+        'NSHighResolutionCapable': 'True',
+        'LSMinimumSystemVersion': '10.13.0',  # macOS High Sierra
+        'CFBundleDocumentTypes': [
+            {
+                'CFBundleTypeName': 'Audio File',
+                'CFBundleTypeRole': 'Viewer',
+                'LSHandlerRank': 'Alternate',
+                'LSItemContentTypes': [
+                    'public.mp3',
+                    'public.mpeg-4-audio',
+                    'com.microsoft.waveform-audio',
+                    'public.audio',
+                ],
+            },
+        ],
+    },
+)

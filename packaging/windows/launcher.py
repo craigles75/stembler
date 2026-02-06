@@ -1,43 +1,23 @@
-"""
-Launcher script for Stembler Windows application.
+"""PyInstaller entry point for the Stembler Windows application.
 
-This script uses absolute imports instead of relative imports,
-making it compatible with PyInstaller as an entry point.
+Adds src/ to sys.path when running from source (development).
+In a frozen PyInstaller bundle the package is already importable.
+All application initialisation (icon, error handler, window) lives
+in gui_main.main().
 """
 
+import multiprocessing
 import sys
 from pathlib import Path
 
-# Add src to path
-src_path = Path(__file__).parent.parent.parent / "src"
-sys.path.insert(0, str(src_path))
-
-from PyQt6.QtWidgets import QApplication  # noqa: E402
-from music_stem_separator.gui.main_window import MainWindow  # noqa: E402
-from music_stem_separator.gui.utils.error_handler import (  # noqa: E402
-    install_error_handler,
-)
-
-
-def main():
-    """Main entry point for the GUI application."""
-    app = QApplication(sys.argv)
-
-    # Set application metadata
-    app.setApplicationName("Stembler")
-    app.setOrganizationName("Stembler")
-    app.setApplicationDisplayName("Music Stem Separator")
-
-    # Install global error handler
-    install_error_handler()
-
-    # Create and show main window
-    window = MainWindow()
-    window.show()
-
-    # Run event loop
-    sys.exit(app.exec())
-
-
 if __name__ == "__main__":
+    # Required for PyInstaller: prevents child processes from re-executing main
+    multiprocessing.freeze_support()
+
+    if not getattr(sys, "frozen", False):
+        src_path = Path(__file__).parent.parent.parent / "src"
+        sys.path.insert(0, str(src_path))
+
+    from music_stem_separator.gui_main import main  # noqa: E402
+
     main()

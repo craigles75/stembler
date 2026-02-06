@@ -20,7 +20,9 @@ src_path = project_root / "src"
 
 # Application metadata
 app_name = "Stembler"
-app_version = "0.1.0"  # Read from pyproject.toml in production
+import tomllib
+with open(str(project_root / "pyproject.toml"), "rb") as _f:
+    app_version = tomllib.load(_f)["project"]["version"]
 
 # Collect all GUI package data
 gui_resources = str(project_root / "src" / "music_stem_separator" / "gui" / "resources")
@@ -66,6 +68,12 @@ hidden_imports += collect_submodules('demucs')
 hidden_imports += collect_submodules('scipy.signal')
 hidden_imports += collect_submodules('scipy.stats')
 hidden_imports += collect_submodules('scipy.sparse')
+# Additional demucs dependencies
+hidden_imports += collect_submodules('einops')
+hidden_imports += collect_submodules('openunmix')
+hidden_imports += collect_submodules('dora')
+hidden_imports += collect_submodules('torch')
+hidden_imports += collect_submodules('torchaudio')
 
 # Analysis: Scan and collect all dependencies
 a = Analysis(
@@ -76,7 +84,7 @@ a = Analysis(
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[str(Path(SPECPATH) / 'runtime_hook.py')],
     excludes=[
         # Exclude unnecessary packages to reduce size
         'tkinter',
@@ -84,6 +92,27 @@ a = Analysis(
         'PIL',
         'IPython',
         'jupyter',
+        # Layer 3: Exclude torch._numpy (stubs provided by runtime_hook.py).
+        # These modules contain vars()[name] loops that crash under PyInstaller
+        # bytecode compilation. Excluding them removes the crash source entirely.
+        'torch._numpy',
+        'torch._numpy._binary_ufuncs_impl',
+        'torch._numpy._casting_dicts',
+        'torch._numpy._dtypes',
+        'torch._numpy._dtypes_impl',
+        'torch._numpy._funcs',
+        'torch._numpy._funcs_impl',
+        'torch._numpy._getlimits',
+        'torch._numpy._ndarray',
+        'torch._numpy._normalizations',
+        'torch._numpy._reductions_impl',
+        'torch._numpy._ufuncs',
+        'torch._numpy._unary_ufuncs_impl',
+        'torch._numpy._util',
+        'torch._numpy.fft',
+        'torch._numpy.linalg',
+        'torch._numpy.random',
+        'torch._numpy.testing',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

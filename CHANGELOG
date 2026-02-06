@@ -1,4 +1,23 @@
+2026-02-06
+- fix: macOS demucs subprocess spawning duplicate GUI — changed separator.py to call demucs as a Python library (get_model, apply_model, save_audio) instead of subprocess; subprocess used sys.executable which in PyInstaller bundle points to the app itself
+- fix: macOS scipy import crash at startup — made scipy.signal import lazy inside stem_processor.enhance_audio_quality(); avoids PyInstaller bytecode bug in scipy.stats._distn_infrastructure
+- fix: macOS ffprobe not found — bundled static ffmpeg/ffprobe binaries in packaging/macos/bin/; launcher adds bundle bin/ to PATH
+- fix: macOS ffprobe SIGABRT crash — replaced homebrew ffprobe (30+ dylib dependencies) with static builds from evermeet.cx (only system frameworks)
+- fix: macOS/Windows "name 'name' is not defined" crash — three-layer defense against PyInstaller bytecode bug in torch/_numpy/_ufuncs.py:
+  - Layer 1 (Primary): runtime_hook.py installs torch._numpy stub modules in sys.modules before any imports, preventing the corrupted bytecode from ever executing
+  - Layer 2 (Backup): build.sh patches vars()[name] loops to globals().update() dict comprehensions before PyInstaller runs, restores after
+  - Layer 3: stembler.spec excludes all torch._numpy submodules from the bundle entirely
+  - TORCHDYNAMO_DISABLE=1 alone was insufficient because torch._dynamo.__init__ unconditionally imports submodules at module level before reading the env var
+- feat: macOS stembler.spec now includes runtime_hook.py, static ffmpeg binaries, and additional hidden imports (einops, openunmix, dora)
+- feat: Windows stembler.spec now includes runtime_hook.py, hidden imports for einops/torch/torchaudio, torch._numpy excludes, and reads version from pyproject.toml
+- fix: macOS launcher.py adds multiprocessing.freeze_support() for PyInstaller child process handling
+- fix: Windows launcher.py adds multiprocessing.freeze_support() for PyInstaller child process handling
+
 2026-02-05
+- fix: macOS DMG app fails to launch — re-enable PyInstaller BUNDLE step (was commented out due to PyQt6 symlink workaround); bootloader requires .app layout to find libpython in Contents/Frameworks/
+- fix: macOS stembler.spec version hardcoded — read app_version from pyproject.toml via tomllib; pre-clean loop now covers both dist/Stembler and dist/Stembler.app
+- fix: macOS build.sh smoke-test targets stale dist/Stembler/ path — updated to check dist/Stembler.app bundle; removed redundant create_app_bundle.sh invocation (BUNDLE produces .app directly)
+- fix: macOS/Windows launcher.py duplicated QApplication setup — stripped to thin entry-point that delegates entirely to gui_main.main()
 - fix: SettingsPanel QGroupBox titles invisible — added explicit color and background-color to ::title pseudo-element in both group boxes
 - fix: SettingsPanel form labels invisible — replaced bare-string addRow labels with explicitly styled QLabel widgets for Model, Output Directory, Enhancement, Client ID, Client Secret
 - fix: SettingsPanel Show buttons rendered on separate rows — moved each Show button inline with its credential field via QHBoxLayout
