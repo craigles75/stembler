@@ -37,7 +37,12 @@ pip install -e .
 To use Spotify track downloading, you need Spotify API credentials:
 
 1. Get Spotify API credentials from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-2. Set environment variables: `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`
+2. Create a `.env` file in the project root:
+   ```
+   SPOTIFY_CLIENT_ID=your_client_id
+   SPOTIFY_CLIENT_SECRET=your_client_secret
+   ```
+3. Run using one of the options below
 
 📖 **Detailed setup instructions**: See [SETUP.md](SETUP.md)
 
@@ -47,8 +52,16 @@ To use Spotify track downloading, you need Spotify API credentials:
 # Separate a local MP3 file
 uv run stem-separator song.mp3
 
-# Process a Spotify track
-uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
+# Process a Spotify track (3 options for loading .env variables):
+
+# Option 1: Use uv's --env-file flag (cleanest)
+uv run --env-file .env stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
+
+# Option 2: Source the .env file first
+source .env && uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
+
+# Option 3: Inline environment variables
+SPOTIFY_CLIENT_ID=xxx SPOTIFY_CLIENT_SECRET=yyy uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
 
 # Use a specific model with custom output directory
 uv run stem-separator song.mp3 --model htdemucs_ft --output ./my_stems
