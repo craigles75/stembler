@@ -49,6 +49,14 @@ class SpotifyHandler:
     # "auto" keeps the source bitrate (highest fidelity available).
     _LEGACY_QUALITY_ALIASES = {"best": "auto"}
 
+    # YouTube Music is spotdl's most reliable provider, with plain YouTube as a
+    # fallback. SoundCloud is intentionally omitted: it requires scraping a
+    # client_id from SoundCloud's JS assets, which breaks whenever they change
+    # that page and would fail the whole download even when YouTube would work.
+    # Override with the STEMBLER_AUDIO_PROVIDERS env var (comma-separated), e.g.
+    # "youtube-music,youtube,soundcloud".
+    DEFAULT_AUDIO_PROVIDERS = ["youtube-music", "youtube"]
+
     def __init__(self, output_format: str = "mp3", quality: str = "auto"):
         """
         Initialize the Spotify handler.
@@ -60,13 +68,22 @@ class SpotifyHandler:
         """
         self.output_format = output_format
         self.quality = self._LEGACY_QUALITY_ALIASES.get(quality, quality)
-
-        # Use YouTube and SoundCloud with fallback
-        self.audio_providers = ["youtube", "soundcloud"]
+        self.audio_providers = self._resolve_audio_providers()
 
         logger.info(
-            f"Initialized SpotifyHandler with format: {output_format}, quality: {quality}"
+            f"Initialized SpotifyHandler with format: {output_format}, "
+            f"quality: {self.quality}, providers: {self.audio_providers}"
         )
+
+    @classmethod
+    def _resolve_audio_providers(cls) -> List[str]:
+        """Audio providers from STEMBLER_AUDIO_PROVIDERS, else the defaults."""
+        override = os.getenv("STEMBLER_AUDIO_PROVIDERS")
+        if override:
+            providers = [p.strip() for p in override.split(",") if p.strip()]
+            if providers:
+                return providers
+        return list(cls.DEFAULT_AUDIO_PROVIDERS)
 
     def _get_credentials(self) -> tuple:
         """

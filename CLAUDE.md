@@ -78,3 +78,9 @@ removed afterward.
   `SPOTIFY_CLIENT_SECRET` (auto-loaded from `.env`); never commit `.env`.
 - `URLDownloader` intentionally blocks private/loopback/link-local hosts. Pass
   `allow_private_hosts=True` only for trusted/local testing.
+- Spotify downloads go through spotdl → yt-dlp (YouTube Music / YouTube). The
+  SoundCloud provider is deliberately excluded (its client_id scrape is broken).
+  Audio providers can be overridden with `STEMBLER_AUDIO_PROVIDERS`. If downloads
+  start failing with "YT-DLP download error", bump yt-dlp
+  (`uv lock --upgrade-package yt-dlp && uv sync`) — it is pinned directly in
+  `pyproject.toml` for this reason.

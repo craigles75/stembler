@@ -46,6 +46,14 @@ To use Spotify track downloading, you need Spotify API credentials:
 
 📖 **Detailed setup instructions**: See [SETUP.md](SETUP.md)
 
+> **Note on Spotify reliability:** Spotify itself doesn't host audio, so spotdl
+> matches each track to a source (YouTube Music / YouTube) and downloads it with
+> `yt-dlp`. If you hit a `YT-DLP download error`, update yt-dlp
+> (`uv lock --upgrade-package yt-dlp && uv sync`) — YouTube changes its player
+> often and an outdated yt-dlp is the usual cause. You can change the source
+> providers with the `STEMBLER_AUDIO_PROVIDERS` env var (comma-separated, e.g.
+> `STEMBLER_AUDIO_PROVIDERS=youtube-music,youtube`).
+
 ### Basic Usage
 
 ```bash
@@ -202,6 +210,7 @@ uv run pytest --cov=src/music_stem_separator --cov-report=html
 - `demucs` - AI stem separation engine
 - `librosa` - Audio processing and analysis
 - `spotdl` - Spotify track downloading
+- `yt-dlp` - Media downloader used by spotdl (kept current for YouTube changes)
 - `click` - Command-line interface framework
 - `torch` & `torchaudio` - PyTorch for ML models
 - `numpy` & `scipy` - Numerical computing
