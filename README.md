@@ -52,15 +52,11 @@ To use Spotify track downloading, you need Spotify API credentials:
 # Separate a local MP3 file
 uv run stem-separator song.mp3
 
-# Process a Spotify track (3 options for loading .env variables):
+# Process a Spotify track.
+# A .env file in the project root is loaded automatically:
+uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
 
-# Option 1: Use uv's --env-file flag (cleanest)
-uv run --env-file .env stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
-
-# Option 2: Source the .env file first
-source .env && uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
-
-# Option 3: Inline environment variables
+# Alternatively, pass the credentials explicitly with inline env vars:
 SPOTIFY_CLIENT_ID=xxx SPOTIFY_CLIENT_SECRET=yyy uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
 
 # Use a specific model with custom output directory

@@ -6,6 +6,35 @@ from click.testing import CliRunner
 from music_stem_separator.cli import main, process_track
 
 
+def _configure_output_manager(mock_output_manager, stems=None):
+    """Configure an OutputManager mock so process_track runs end-to-end."""
+    stems = stems or {"drums": "/tmp/drums.wav"}
+    mock_output = Mock()
+    mock_output_manager.return_value = mock_output
+
+    output_structure = {
+        "track_dir": "/tmp/output/track",
+        "stems_dir": "/tmp/output/track/stems",
+        "track_name": "track",
+    }
+    organized_files = {name: f"/tmp/output/track/stems/{name}.wav" for name in stems}
+
+    mock_output.organize_stem_files.return_value = {
+        "success": True,
+        "organized_files": organized_files,
+        "output_structure": output_structure,
+    }
+    mock_output.generate_metadata.return_value = {"track_name": "track"}
+    mock_output.save_metadata.return_value = {"success": True}
+    mock_output.create_summary_report.return_value = "Test report"
+    mock_output.get_output_summary.return_value = {
+        "track_directory": output_structure["track_dir"],
+        "total_files": len(organized_files),
+        "total_size_mb": 1.0,
+    }
+    return mock_output
+
+
 class TestCLI:
     """Test cases for the CLI interface."""
 
@@ -40,75 +69,67 @@ class TestCLI:
         """Test CLI with local file input."""
         runner = CliRunner()
 
-        # Mock the processors
-        mock_input = Mock()
-        mock_input_processor.return_value = mock_input
-        mock_input.process_input.return_value = {
+        mock_input_processor.return_value.process_input.return_value = {
             "success": True,
             "input_type": "local_file",
             "audio_file": "/tmp/test.mp3",
         }
-
-        mock_sep = Mock()
-        mock_separator.return_value = mock_sep
-        mock_sep.separate_stems.return_value = {
+        mock_separator.return_value.separate_stems.return_value = {
             "success": True,
             "stems": {"drums": "/tmp/drums.wav", "vocals": "/tmp/vocals.wav"},
         }
-
-        mock_proc = Mock()
-        mock_stem_processor.return_value = mock_proc
-        mock_proc.process_stem_files.return_value = {"success": True}
-
-        mock_output = Mock()
-        mock_output_manager.return_value = mock_output
-        mock_output.organize_stem_files.return_value = {"success": True}
+        mock_stem_processor.return_value.process_stem_files.return_value = {
+            "success": True,
+            "processed_stems": {},
+        }
+        _configure_output_manager(
+            mock_output_manager,
+            stems={"drums": "x", "vocals": "x"},
+        )
 
         result = runner.invoke(main, ["/tmp/test.mp3"])
 
         assert result.exit_code == 0
 
     @patch("music_stem_separator.cli.InputProcessor")
-    def test_cli_spotify_url(self, mock_input_processor):
+    @patch("music_stem_separator.cli.StemSeparator")
+    @patch("music_stem_separator.cli.StemProcessor")
+    @patch("music_stem_separator.cli.OutputManager")
+    def test_cli_spotify_url(
+        self,
+        mock_output_manager,
+        mock_stem_processor,
+        mock_separator,
+        mock_input_processor,
+    ):
         """Test CLI with Spotify URL."""
         runner = CliRunner()
 
-        mock_input = Mock()
-        mock_input_processor.return_value = mock_input
-        mock_input.process_input.return_value = {
+        mock_input_processor.return_value.process_input.return_value = {
             "success": True,
             "input_type": "spotify_url",
             "audio_file": "/tmp/downloaded.mp3",
         }
+        mock_separator.return_value.separate_stems.return_value = {
+            "success": True,
+            "stems": {"drums": "/tmp/drums.wav"},
+        }
+        mock_stem_processor.return_value.process_stem_files.return_value = {
+            "success": True,
+            "processed_stems": {},
+        }
+        _configure_output_manager(mock_output_manager)
 
-        # Mock other components
-        with (
-            patch("music_stem_separator.cli.StemSeparator") as mock_sep,
-            patch("music_stem_separator.cli.StemProcessor") as mock_proc,
-            patch("music_stem_separator.cli.OutputManager") as mock_output,
-        ):
+        result = runner.invoke(main, ["https://open.spotify.com/track/123"])
 
-            mock_sep.return_value.separate_stems.return_value = {
-                "success": True,
-                "stems": {},
-            }
-            mock_proc.return_value.process_stem_files.return_value = {"success": True}
-            mock_output.return_value.organize_stem_files.return_value = {
-                "success": True
-            }
-
-            result = runner.invoke(main, ["https://open.spotify.com/track/123"])
-
-            assert result.exit_code == 0
+        assert result.exit_code == 0
 
     def test_cli_invalid_input(self):
         """Test CLI with invalid input."""
         runner = CliRunner()
 
         with patch("music_stem_separator.cli.InputProcessor") as mock_input_processor:
-            mock_input = Mock()
-            mock_input_processor.return_value = mock_input
-            mock_input.process_input.return_value = {
+            mock_input_processor.return_value.process_input.return_value = {
                 "success": False,
                 "error": "Invalid input",
             }
@@ -118,118 +139,106 @@ class TestCLI:
             assert result.exit_code == 1
             assert "Invalid input" in result.output
 
-    def test_cli_with_model_option(self):
+    @patch("music_stem_separator.cli.InputProcessor")
+    @patch("music_stem_separator.cli.StemSeparator")
+    @patch("music_stem_separator.cli.StemProcessor")
+    @patch("music_stem_separator.cli.OutputManager")
+    def test_cli_with_model_option(
+        self,
+        mock_output_manager,
+        mock_stem_processor,
+        mock_separator,
+        mock_input_processor,
+    ):
         """Test CLI with custom model option."""
         runner = CliRunner()
 
-        with (
-            patch("music_stem_separator.cli.InputProcessor") as mock_input_processor,
-            patch("music_stem_separator.cli.StemSeparator") as mock_separator,
-        ):
+        mock_input_processor.return_value.process_input.return_value = {
+            "success": True,
+            "input_type": "local_file",
+            "audio_file": "/tmp/test.mp3",
+        }
+        mock_separator.return_value.separate_stems.return_value = {
+            "success": True,
+            "stems": {"drums": "/tmp/drums.wav"},
+        }
+        mock_stem_processor.return_value.process_stem_files.return_value = {
+            "success": True,
+            "processed_stems": {},
+        }
+        _configure_output_manager(mock_output_manager)
 
-            mock_input = Mock()
-            mock_input_processor.return_value = mock_input
-            mock_input.process_input.return_value = {
-                "success": True,
-                "audio_file": "/tmp/test.mp3",
-            }
+        result = runner.invoke(main, ["/tmp/test.mp3", "--model", "htdemucs_ft"])
 
-            mock_sep = Mock()
-            mock_separator.return_value = mock_sep
-            mock_sep.separate_stems.return_value = {"success": True, "stems": {}}
+        assert result.exit_code == 0
+        mock_separator.assert_called_with(
+            model_name="htdemucs_ft", device=None, timeout=1800
+        )
 
-            with (
-                patch("music_stem_separator.cli.StemProcessor") as mock_proc,
-                patch("music_stem_separator.cli.OutputManager") as mock_output,
-            ):
-
-                mock_proc.return_value.process_stem_files.return_value = {
-                    "success": True
-                }
-                mock_output.return_value.organize_stem_files.return_value = {
-                    "success": True
-                }
-
-                result = runner.invoke(
-                    main, ["/tmp/test.mp3", "--model", "htdemucs_ft"]
-                )
-
-                assert result.exit_code == 0
-                mock_separator.assert_called_with(model_name="htdemucs_ft", device=None)
-
-    def test_cli_with_output_option(self):
+    @patch("music_stem_separator.cli.InputProcessor")
+    @patch("music_stem_separator.cli.StemSeparator")
+    @patch("music_stem_separator.cli.StemProcessor")
+    @patch("music_stem_separator.cli.OutputManager")
+    def test_cli_with_output_option(
+        self,
+        mock_output_manager,
+        mock_stem_processor,
+        mock_separator,
+        mock_input_processor,
+    ):
         """Test CLI with custom output directory."""
         runner = CliRunner()
 
-        with (
-            patch("music_stem_separator.cli.InputProcessor") as mock_input_processor,
-            patch("music_stem_separator.cli.OutputManager") as mock_output_manager,
-        ):
+        mock_input_processor.return_value.process_input.return_value = {
+            "success": True,
+            "input_type": "local_file",
+            "audio_file": "/tmp/test.mp3",
+        }
+        mock_separator.return_value.separate_stems.return_value = {
+            "success": True,
+            "stems": {"drums": "/tmp/drums.wav"},
+        }
+        mock_stem_processor.return_value.process_stem_files.return_value = {
+            "success": True,
+            "processed_stems": {},
+        }
+        _configure_output_manager(mock_output_manager)
 
-            mock_input = Mock()
-            mock_input_processor.return_value = mock_input
-            mock_input.process_input.return_value = {
-                "success": True,
-                "audio_file": "/tmp/test.mp3",
-            }
+        result = runner.invoke(main, ["/tmp/test.mp3", "--output", "/custom/output"])
 
-            mock_output = Mock()
-            mock_output_manager.return_value = mock_output
+        assert result.exit_code == 0
+        mock_output_manager.assert_called_with("/custom/output")
 
-            with (
-                patch("music_stem_separator.cli.StemSeparator") as mock_sep,
-                patch("music_stem_separator.cli.StemProcessor") as mock_proc,
-            ):
-
-                mock_sep.return_value.separate_stems.return_value = {
-                    "success": True,
-                    "stems": {},
-                }
-                mock_proc.return_value.process_stem_files.return_value = {
-                    "success": True
-                }
-                mock_output.organize_stem_files.return_value = {"success": True}
-
-                result = runner.invoke(
-                    main, ["/tmp/test.mp3", "--output", "/custom/output"]
-                )
-
-                assert result.exit_code == 0
-                mock_output_manager.assert_called_with("/custom/output")
-
-    def test_cli_no_enhancement(self):
+    @patch("music_stem_separator.cli.InputProcessor")
+    @patch("music_stem_separator.cli.StemSeparator")
+    @patch("music_stem_separator.cli.StemProcessor")
+    @patch("music_stem_separator.cli.OutputManager")
+    def test_cli_no_enhancement(
+        self,
+        mock_output_manager,
+        mock_stem_processor,
+        mock_separator,
+        mock_input_processor,
+    ):
         """Test CLI with enhancement disabled."""
         runner = CliRunner()
 
-        with patch("music_stem_separator.cli.StemProcessor") as mock_stem_processor:
-            mock_proc = Mock()
-            mock_stem_processor.return_value = mock_proc
+        mock_input_processor.return_value.process_input.return_value = {
+            "success": True,
+            "input_type": "local_file",
+            "audio_file": "/tmp/test.mp3",
+        }
+        mock_separator.return_value.separate_stems.return_value = {
+            "success": True,
+            "stems": {"drums": "/tmp/drums.wav"},
+        }
+        _configure_output_manager(mock_output_manager)
 
-            with (
-                patch(
-                    "music_stem_separator.cli.InputProcessor"
-                ) as mock_input_processor,
-                patch("music_stem_separator.cli.StemSeparator") as mock_sep,
-                patch("music_stem_separator.cli.OutputManager") as mock_output,
-            ):
+        result = runner.invoke(main, ["/tmp/test.mp3", "--no-enhance"])
 
-                mock_input_processor.return_value.process_input.return_value = {
-                    "success": True,
-                    "audio_file": "/tmp/test.mp3",
-                }
-                mock_sep.return_value.separate_stems.return_value = {
-                    "success": True,
-                    "stems": {},
-                }
-                mock_proc.process_stem_files.return_value = {"success": True}
-                mock_output.return_value.organize_stem_files.return_value = {
-                    "success": True
-                }
-
-                result = runner.invoke(main, ["/tmp/test.mp3", "--no-enhance"])
-
-                assert result.exit_code == 0
-                mock_stem_processor.assert_called_with(enable_enhancement=False)
+        assert result.exit_code == 0
+        # With enhancement disabled, the StemProcessor stage is skipped entirely.
+        mock_stem_processor.assert_not_called()
 
     def test_cli_verbose_mode(self):
         """Test CLI verbose mode."""
@@ -244,7 +253,6 @@ class TestCLI:
             result = runner.invoke(main, ["/tmp/test.mp3", "--verbose"])
 
             assert result.exit_code == 1
-            # In verbose mode, more detailed output should be shown
 
     @patch("music_stem_separator.cli.InputProcessor")
     @patch("music_stem_separator.cli.StemSeparator")
@@ -258,33 +266,22 @@ class TestCLI:
         mock_input_processor,
     ):
         """Test the process_track function directly."""
-        # Setup mocks
-        mock_input = Mock()
-        mock_input_processor.return_value = mock_input
-        mock_input.process_input.return_value = {
+        mock_input_processor.return_value.process_input.return_value = {
             "success": True,
             "input_type": "local_file",
             "audio_file": "/tmp/test.mp3",
         }
-
-        mock_sep = Mock()
-        mock_separator.return_value = mock_sep
-        mock_sep.separate_stems.return_value = {
+        mock_separator.return_value.separate_stems.return_value = {
             "success": True,
             "stems": {"drums": "/tmp/drums.wav"},
             "track_name": "test_song",
         }
+        mock_stem_processor.return_value.process_stem_files.return_value = {
+            "success": True,
+            "processed_stems": {},
+        }
+        _configure_output_manager(mock_output_manager)
 
-        mock_proc = Mock()
-        mock_stem_processor.return_value = mock_proc
-        mock_proc.process_stem_files.return_value = {"success": True}
-
-        mock_output = Mock()
-        mock_output_manager.return_value = mock_output
-        mock_output.organize_stem_files.return_value = {"success": True}
-        mock_output.create_summary_report.return_value = "Test report"
-
-        # Test the function
         result = process_track(
             input_path="/tmp/test.mp3",
             output_dir="/tmp/output",
@@ -295,3 +292,4 @@ class TestCLI:
         )
 
         assert result["success"] is True
+        assert result["enhancement_applied"] is True

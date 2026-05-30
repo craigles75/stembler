@@ -1,6 +1,6 @@
 """Tests for the core separator module."""
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from music_stem_separator.separator import StemSeparator
 
@@ -34,36 +34,42 @@ class TestStemSeparator:
         assert not separator.is_supported_format("test.txt")
         assert not separator.is_supported_format("test")
 
-    @patch("music_stem_separator.separator.demucs.api.separate")
-    def test_separate_stems_success(self, mock_separate):
-        """Test successful stem separation."""
-        separator = StemSeparator()
-        test_file = "test.mp3"
-        output_dir = "/tmp/output"
+    @patch("music_stem_separator.separator.StemSeparator.discover_stems")
+    @patch("subprocess.run")
+    def test_separate_stems_success(self, mock_run, mock_discover, tmp_path):
+        """Test successful stem separation (Demucs invoked via subprocess)."""
+        separator = StemSeparator(device="cpu")
+        audio_file = tmp_path / "test.mp3"
+        audio_file.write_bytes(b"fake audio")
+        output_dir = tmp_path / "output"
 
-        mock_separate.return_value = None
+        mock_run.return_value = Mock(returncode=0, stderr="")
+        mock_discover.return_value = {
+            "drums": output_dir / "htdemucs" / "test" / "drums.wav"
+        }
 
-        result = separator.separate_stems(test_file, output_dir)
+        result = separator.separate_stems(str(audio_file), str(output_dir))
 
-        mock_separate.assert_called_once()
+        mock_run.assert_called_once()
         assert result["success"] is True
-        assert result["output_dir"] == output_dir
-        assert "stems" in result
+        assert result["output_dir"] == str(output_dir)
+        assert "stems" in result and result["stems"]
 
-    @patch("music_stem_separator.separator.demucs.api.separate")
-    def test_separate_stems_failure(self, mock_separate):
-        """Test stem separation with error handling."""
-        separator = StemSeparator()
-        test_file = "nonexistent.mp3"
-        output_dir = "/tmp/output"
+    @patch("subprocess.run")
+    def test_separate_stems_failure(self, mock_run, tmp_path):
+        """Test stem separation surfaces a non-zero Demucs exit."""
+        separator = StemSeparator(device="cpu")
+        audio_file = tmp_path / "test.mp3"
+        audio_file.write_bytes(b"fake audio")
+        output_dir = tmp_path / "output"
 
-        mock_separate.side_effect = Exception("File not found")
+        mock_run.return_value = Mock(returncode=1, stderr="boom")
 
-        result = separator.separate_stems(test_file, output_dir)
+        result = separator.separate_stems(str(audio_file), str(output_dir))
 
         assert result["success"] is False
         assert "error" in result
-        assert "File not found" in result["error"]
+        assert "boom" in result["error"]
 
     def test_get_stem_paths(self):
         """Test stem file path generation."""

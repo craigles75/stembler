@@ -14,42 +14,84 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 
+# Canonical Spotify track URL/URI patterns, shared by the handler and the
+# input processor so the matching rules live in exactly one place.
+SPOTIFY_URL_PATTERNS = [
+    r"https://open\.spotify\.com/track/[a-zA-Z0-9]+",
+    r"spotify:track:[a-zA-Z0-9]+",
+]
+
+
+def is_spotify_url(url: str) -> bool:
+    """Return True if ``url`` is a valid Spotify track URL or URI."""
+    if not url or not isinstance(url, str):
+        return False
+    return any(re.match(pattern, url.strip()) for pattern in SPOTIFY_URL_PATTERNS)
+
+
+def extract_track_id(url: str) -> Optional[str]:
+    """Extract the Spotify track ID from a URL or URI, or None if absent."""
+    if not is_spotify_url(url):
+        return None
+
+    url = url.strip()
+    if url.startswith("spotify:track:"):
+        return url.split(":")[-1]
+
+    match = re.search(r"/track/([a-zA-Z0-9]+)", url)
+    return match.group(1) if match else None
+
 
 class SpotifyHandler:
     """Handler for downloading tracks from Spotify using spotdl."""
 
-    def __init__(self, output_format: str = "mp3", quality: str = "best"):
+    # spotdl accepts "auto", "disable", or a constant bitrate like "320k".
+    # "auto" keeps the source bitrate (highest fidelity available).
+    _LEGACY_QUALITY_ALIASES = {"best": "auto"}
+
+    def __init__(self, output_format: str = "mp3", quality: str = "auto"):
         """
         Initialize the Spotify handler.
 
         Args:
             output_format: Audio format for downloads (mp3, wav, flac, etc.)
-            quality: Audio quality (best, 320k, 256k, 192k, 128k, etc.)
+            quality: spotdl bitrate: "auto", "disable", or "8k".."320k".
+                The legacy value "best" is treated as "auto".
         """
         self.output_format = output_format
-        self.quality = quality
+        self.quality = self._LEGACY_QUALITY_ALIASES.get(quality, quality)
 
-        # Get Spotify credentials from environment variables
-        self.client_id = os.getenv("SPOTIFY_CLIENT_ID")
-        self.client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-        
-        if not self.client_id or not self.client_secret:
+        # Use YouTube and SoundCloud with fallback
+        self.audio_providers = ["youtube", "soundcloud"]
+
+        logger.info(
+            f"Initialized SpotifyHandler with format: {output_format}, quality: {quality}"
+        )
+
+    def _get_credentials(self) -> tuple:
+        """
+        Read Spotify credentials from the environment.
+
+        Credentials are read lazily (at download time) rather than in __init__ so
+        the handler can be constructed and its URL helpers used without them.
+
+        Returns:
+            Tuple of (client_id, client_secret)
+
+        Raises:
+            ValueError: if either credential is missing
+        """
+        client_id = os.getenv("SPOTIFY_CLIENT_ID")
+        client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+
+        if not client_id or not client_secret:
             raise ValueError(
                 "Spotify credentials not found. Please set SPOTIFY_CLIENT_ID and "
                 "SPOTIFY_CLIENT_SECRET environment variables. "
                 "Get them from https://developer.spotify.com/dashboard"
             )
 
-        # Store settings for spotdl initialization
-        self.settings = {
-            "output_format": output_format,
-            "bitrate": quality,
-            "audio_providers": ["youtube", "soundcloud"],  # Use YouTube and SoundCloud with fallback
-        }
-
-        logger.info(
-            f"Initialized SpotifyHandler with format: {output_format}, quality: {quality}"
-        )
+        return client_id, client_secret
 
     def is_spotify_url(self, url: str) -> bool:
         """
@@ -61,16 +103,7 @@ class SpotifyHandler:
         Returns:
             True if valid Spotify track URL, False otherwise
         """
-        if not url or not isinstance(url, str):
-            return False
-
-        # Support both HTTP and Spotify URI formats
-        spotify_patterns = [
-            r"https://open\.spotify\.com/track/[a-zA-Z0-9]+",
-            r"spotify:track:[a-zA-Z0-9]+",
-        ]
-
-        return any(re.match(pattern, url.strip()) for pattern in spotify_patterns)
+        return is_spotify_url(url)
 
     def extract_track_id(self, url: str) -> Optional[str]:
         """
@@ -82,19 +115,7 @@ class SpotifyHandler:
         Returns:
             Track ID if found, None otherwise
         """
-        if not self.is_spotify_url(url):
-            return None
-
-        # Handle Spotify URI format: spotify:track:ID
-        if url.startswith("spotify:track:"):
-            return url.split(":")[-1]
-
-        # Handle HTTP URL format
-        track_id_match = re.search(r"/track/([a-zA-Z0-9]+)", url)
-        if track_id_match:
-            return track_id_match.group(1)
-
-        return None
+        return extract_track_id(url)
 
     def download_track(self, spotify_url: str, output_dir: Union[str, Path]) -> Dict:
         """
@@ -118,19 +139,24 @@ class SpotifyHandler:
             output_dir = Path(output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
 
+            client_id, client_secret = self._get_credentials()
+
             logger.info(f"Downloading Spotify track: {track_id}")
 
-            # Initialize spotdl with credentials and settings
-            # Disable strict filtering to allow more flexible matching
-            # YouTube API changes have made strict filtering too aggressive
+            # Initialize spotdl with credentials and settings.
+            # filter_results is disabled because YouTube API changes have made
+            # spotdl's strict filtering too aggressive.
             downloader_settings = {
-                "audio_providers": self.settings["audio_providers"],
-                "filter_results": False,  # Allow all search results (filtering is too strict)
+                "audio_providers": self.audio_providers,
+                "output": str(output_dir / "{artists} - {title}.{output-ext}"),
+                "format": self.output_format,
+                "bitrate": self.quality,
+                "filter_results": False,
             }
             spotdl = Spotdl(
-                client_id=self.client_id,
-                client_secret=self.client_secret,
-                downloader_settings=downloader_settings
+                client_id=client_id,
+                client_secret=client_secret,
+                downloader_settings=downloader_settings,
             )
 
             # Download the track
@@ -156,7 +182,10 @@ class SpotifyHandler:
 
         except Exception as e:
             error_msg = str(e)
-            if "No results found" in error_msg or "Requested format is not available" in error_msg:
+            if (
+                "No results found" in error_msg
+                or "Requested format is not available" in error_msg
+            ):
                 error_msg = (
                     f"Song with track ID '{track_id}' is not available for download due to copyright restrictions "
                     "or is blocked on all audio platforms. Try a different song or use a local MP3 file instead."

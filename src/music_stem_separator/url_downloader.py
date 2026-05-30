@@ -1,8 +1,9 @@
 """URL download functionality for audio files."""
 
+import ipaddress
 import os
 import logging
-import tempfile
+import socket
 from pathlib import Path
 from typing import Dict, Optional
 from urllib.parse import urlparse
@@ -13,21 +14,34 @@ from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
+ALLOWED_SCHEMES = {"http", "https"}
+
 
 class URLDownloader:
     """Handler for downloading audio files from URLs."""
 
-    def __init__(self, timeout: int = 30, max_retries: int = 3):
+    def __init__(
+        self,
+        timeout: int = 30,
+        max_retries: int = 3,
+        max_file_size_mb: float = 500,
+        allow_private_hosts: bool = False,
+    ):
         """
         Initialize the URL downloader.
 
         Args:
             timeout: Request timeout in seconds
             max_retries: Maximum number of retry attempts
+            max_file_size_mb: Reject/abort downloads larger than this many MB
+            allow_private_hosts: If True, skip the SSRF guard that blocks
+                private/loopback/link-local addresses (default False)
         """
         self.timeout = timeout
         self.max_retries = max_retries
-        
+        self.max_file_size_mb = max_file_size_mb
+        self.allow_private_hosts = allow_private_hosts
+
         # Set up session with retry strategy
         self.session = requests.Session()
         retry_strategy = Retry(
@@ -38,17 +52,21 @@ class URLDownloader:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
-        
-        # Set user agent to avoid blocking
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        })
 
-        logger.info(f"Initialized URLDownloader with timeout: {timeout}s, max_retries: {max_retries}")
+        # Set user agent to avoid blocking
+        self.session.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+        )
+
+        logger.info(
+            f"Initialized URLDownloader with timeout: {timeout}s, max_retries: {max_retries}"
+        )
 
     def is_valid_url(self, url: str) -> bool:
         """
-        Check if the provided string is a valid URL.
+        Check if the provided string is a valid http(s) URL.
 
         Args:
             url: URL to validate
@@ -58,9 +76,48 @@ class URLDownloader:
         """
         try:
             result = urlparse(url)
-            return all([result.scheme, result.netloc])
+            return result.scheme in ALLOWED_SCHEMES and bool(result.netloc)
         except Exception:
             return False
+
+    def is_safe_url(self, url: str) -> bool:
+        """
+        Guard against SSRF by rejecting URLs whose host resolves to a
+        non-public address (loopback, private, link-local, reserved).
+
+        Args:
+            url: URL to check
+
+        Returns:
+            True if the host resolves only to public addresses, False otherwise
+        """
+        if self.allow_private_hosts:
+            return True
+
+        host = urlparse(url).hostname
+        if not host:
+            return False
+
+        try:
+            addr_infos = socket.getaddrinfo(host, None)
+        except socket.gaierror as e:
+            logger.debug(f"Could not resolve host {host}: {e}")
+            return False
+
+        for info in addr_infos:
+            ip = ipaddress.ip_address(info[4][0])
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip.is_multicast
+                or ip.is_unspecified
+            ):
+                logger.warning(f"Refusing to fetch non-public address for {host}: {ip}")
+                return False
+
+        return True
 
     def is_audio_url(self, url: str) -> bool:
         """
@@ -76,30 +133,45 @@ class URLDownloader:
             return False
 
         # Check file extension
-        audio_extensions = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.wma'}
+        audio_extensions = {".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".wma"}
         parsed_url = urlparse(url)
         path = Path(parsed_url.path)
-        
+
         if path.suffix.lower() in audio_extensions:
             return True
 
+        # Any network probe must pass the SSRF guard first.
+        if not self.is_safe_url(url):
+            return False
+
         # Check content type by making a HEAD request
         try:
-            response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
-            content_type = response.headers.get('content-type', '').lower()
-            
+            response = self.session.head(
+                url, timeout=self.timeout, allow_redirects=True
+            )
+            content_type = response.headers.get("content-type", "").lower()
+
             audio_types = {
-                'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/flac',
-                'audio/mp4', 'audio/aac', 'audio/ogg', 'audio/x-wav',
-                'audio/wave', 'audio/x-m4a'
+                "audio/mpeg",
+                "audio/mp3",
+                "audio/wav",
+                "audio/flac",
+                "audio/mp4",
+                "audio/aac",
+                "audio/ogg",
+                "audio/x-wav",
+                "audio/wave",
+                "audio/x-m4a",
             }
-            
+
             return any(audio_type in content_type for audio_type in audio_types)
         except Exception as e:
             logger.debug(f"Could not check content type for {url}: {e}")
             return False
 
-    def download_file(self, url: str, output_dir: str, filename: Optional[str] = None) -> Dict:
+    def download_file(
+        self, url: str, output_dir: str, filename: Optional[str] = None
+    ) -> Dict:
         """
         Download an audio file from a URL.
 
@@ -115,11 +187,16 @@ class URLDownloader:
             if not self.is_valid_url(url):
                 raise ValueError(f"Invalid URL: {url}")
 
+            if not self.is_safe_url(url):
+                raise ValueError(f"Refusing to download from non-public host: {url}")
+
             if not self.is_audio_url(url):
                 raise ValueError(f"URL does not appear to be an audio file: {url}")
 
             output_dir = Path(output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
+
+            max_bytes = int(self.max_file_size_mb * 1024 * 1024)
 
             # Generate filename if not provided
             if not filename:
@@ -139,23 +216,38 @@ class URLDownloader:
             response = self.session.get(url, timeout=self.timeout, stream=True)
             response.raise_for_status()
 
-            # Get file size if available
-            file_size = int(response.headers.get('content-length', 0))
+            # Get file size if available, and reject oversized downloads up front.
+            file_size = int(response.headers.get("content-length", 0))
             if file_size > 0:
                 logger.info(f"File size: {file_size / (1024*1024):.1f} MB")
+                if file_size > max_bytes:
+                    raise ValueError(
+                        f"File too large: {file_size / (1024*1024):.1f} MB exceeds "
+                        f"limit of {self.max_file_size_mb} MB"
+                    )
 
-            # Download with progress
+            # Download with progress, aborting if the stream exceeds the cap
+            # (covers servers that omit or misreport content-length).
             downloaded = 0
-            with open(output_path, 'wb') as f:
+            with open(output_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
-                        f.write(chunk)
                         downloaded += len(chunk)
-                        
+                        if downloaded > max_bytes:
+                            f.close()
+                            output_path.unlink(missing_ok=True)
+                            raise ValueError(
+                                f"Download aborted: exceeded size limit of "
+                                f"{self.max_file_size_mb} MB"
+                            )
+                        f.write(chunk)
+
                         if file_size > 0:
                             progress = (downloaded / file_size) * 100
                             if downloaded % (1024 * 1024) == 0:  # Log every MB
-                                logger.debug(f"Downloaded: {downloaded / (1024*1024):.1f} MB ({progress:.1f}%)")
+                                logger.debug(
+                                    f"Downloaded: {downloaded / (1024*1024):.1f} MB ({progress:.1f}%)"
+                                )
 
             # Verify file was downloaded
             if not output_path.exists() or output_path.stat().st_size == 0:
@@ -175,11 +267,7 @@ class URLDownloader:
 
         except Exception as e:
             logger.error(f"URL download failed: {str(e)}")
-            return {
-                "success": False,
-                "url": url,
-                "error": str(e)
-            }
+            return {"success": False, "url": url, "error": str(e)}
 
     def get_file_info(self, url: str) -> Dict:
         """
@@ -195,11 +283,16 @@ class URLDownloader:
             if not self.is_valid_url(url):
                 return {"valid": False, "error": "Invalid URL"}
 
-            response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
+            if not self.is_safe_url(url):
+                return {"valid": False, "error": "Refusing to access non-public host"}
+
+            response = self.session.head(
+                url, timeout=self.timeout, allow_redirects=True
+            )
             response.raise_for_status()
 
-            content_type = response.headers.get('content-type', '')
-            content_length = response.headers.get('content-length')
+            content_type = response.headers.get("content-type", "")
+            content_length = response.headers.get("content-length")
             file_size = int(content_length) if content_length else 0
 
             return {
@@ -208,7 +301,7 @@ class URLDownloader:
                 "content_type": content_type,
                 "file_size": file_size,
                 "file_size_mb": file_size / (1024 * 1024) if file_size > 0 else 0,
-                "is_audio": self.is_audio_url(url)
+                "is_audio": self.is_audio_url(url),
             }
 
         except Exception as e:

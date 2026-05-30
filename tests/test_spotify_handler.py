@@ -14,7 +14,7 @@ class TestSpotifyHandler:
         """Test that SpotifyHandler initializes correctly."""
         handler = SpotifyHandler()
         assert handler.output_format == "mp3"
-        assert handler.quality == "best"
+        assert handler.quality == "auto"
 
     def test_spotify_handler_custom_initialization(self):
         """Test SpotifyHandler with custom settings."""
@@ -69,37 +69,45 @@ class TestSpotifyHandler:
         for url, expected_id in test_cases:
             assert handler.extract_track_id(url) == expected_id
 
+    @patch("music_stem_separator.spotify_handler.os.path.exists", return_value=True)
     @patch("music_stem_separator.spotify_handler.Spotdl")
-    def test_download_track_success(self, mock_spotdl_class):
-        """Test successful track download."""
+    def test_download_track_success(
+        self, mock_spotdl_class, mock_exists, tmp_path, monkeypatch
+    ):
+        """Test successful track download (spotdl search + download)."""
+        monkeypatch.setenv("SPOTIFY_CLIENT_ID", "test_id")
+        monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "test_secret")
         handler = SpotifyHandler()
 
         mock_spotdl = Mock()
         mock_spotdl_class.return_value = mock_spotdl
-        mock_spotdl.download.return_value = ["/tmp/downloaded_song.mp3"]
+        song = Mock()
+        mock_spotdl.search.return_value = [song]
+        mock_spotdl.download.return_value = (song, "/tmp/downloaded_song.mp3")
 
         url = "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
-        output_dir = "/tmp/downloads"
 
-        result = handler.download_track(url, output_dir)
+        result = handler.download_track(url, str(tmp_path))
 
         assert result["success"] is True
         assert result["file_path"] == "/tmp/downloaded_song.mp3"
         assert result["track_id"] == "4uLU6hMCjMI75M1A2tKUQC"
 
     @patch("music_stem_separator.spotify_handler.Spotdl")
-    def test_download_track_failure(self, mock_spotdl_class):
+    def test_download_track_failure(self, mock_spotdl_class, tmp_path, monkeypatch):
         """Test download failure handling."""
+        monkeypatch.setenv("SPOTIFY_CLIENT_ID", "test_id")
+        monkeypatch.setenv("SPOTIFY_CLIENT_SECRET", "test_secret")
         handler = SpotifyHandler()
 
         mock_spotdl = Mock()
         mock_spotdl_class.return_value = mock_spotdl
+        mock_spotdl.search.return_value = [Mock()]
         mock_spotdl.download.side_effect = Exception("Download failed")
 
-        url = "https://open.spotify.com/track/invalid"
-        output_dir = "/tmp/downloads"
+        url = "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
 
-        result = handler.download_track(url, output_dir)
+        result = handler.download_track(url, str(tmp_path))
 
         assert result["success"] is False
         assert "error" in result

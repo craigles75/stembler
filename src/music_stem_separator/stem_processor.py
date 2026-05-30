@@ -3,7 +3,7 @@
 import logging
 import numpy as np
 from pathlib import Path
-from typing import Dict, Union, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 try:
     import librosa
@@ -18,6 +18,14 @@ logger = logging.getLogger(__name__)
 
 class StemProcessor:
     """Processor for enhancing and manipulating separated audio stems."""
+
+    # Audio formats handled by the loader (librosa/soundfile), kept consistent
+    # with the rest of the pipeline's supported inputs.
+    SUPPORTED_FORMATS = [".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg"]
+
+    # The brightening enhancement (pre-emphasis + high-shelf) would degrade
+    # low-frequency stems, so it is skipped for these.
+    LOW_FREQUENCY_STEMS = {"bass", "drums"}
 
     def __init__(self, sample_rate: int = 44100, enable_enhancement: bool = True):
         """
@@ -197,7 +205,10 @@ class StemProcessor:
             return audio_data
 
     def process_single_stem(
-        self, input_file: Union[str, Path], output_file: Union[str, Path]
+        self,
+        input_file: Union[str, Path],
+        output_file: Union[str, Path],
+        stem_name: Optional[str] = None,
     ) -> Dict:
         """
         Process a single stem file with enhancement.
@@ -205,6 +216,8 @@ class StemProcessor:
         Args:
             input_file: Input stem file path
             output_file: Output processed file path
+            stem_name: Name of the stem (used to skip brightening on
+                low-frequency stems such as bass/drums)
 
         Returns:
             Processing result dictionary
@@ -217,8 +230,12 @@ class StemProcessor:
             if not self.validate_audio_data(audio_data):
                 raise ValueError("Invalid audio data loaded")
 
-            # Apply processing steps
-            if self.enable_enhancement:
+            # Apply brightening only to stems where it helps; bass/drums are
+            # left unenhanced so their low end is preserved.
+            enhance = self.enable_enhancement and (
+                stem_name is None or stem_name not in self.LOW_FREQUENCY_STEMS
+            )
+            if enhance:
                 audio_data = self.enhance_audio_quality(audio_data)
 
             # Apply fade in/out
@@ -237,7 +254,7 @@ class StemProcessor:
                 "success": True,
                 "input_file": str(input_file),
                 "output_file": str(output_file),
-                "processing_applied": self.enable_enhancement,
+                "processing_applied": enhance,
                 "metrics": self.calculate_audio_metrics(audio_data),
             }
 
@@ -270,7 +287,9 @@ class StemProcessor:
                 output_file = output_dir / f"{stem_name}_processed{input_path.suffix}"
 
                 # Process the stem
-                result = self.process_single_stem(input_file, output_file)
+                result = self.process_single_stem(
+                    input_file, output_file, stem_name=stem_name
+                )
 
                 if result["success"]:
                     results["processed_stems"][stem_name] = result
@@ -362,5 +381,5 @@ class StemProcessor:
         return {
             "sample_rate": self.sample_rate,
             "enable_enhancement": self.enable_enhancement,
-            "supported_formats": [".wav", ".flac", ".mp3", ".m4a"],
+            "supported_formats": list(self.SUPPORTED_FORMATS),
         }

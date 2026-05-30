@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Python music stem separation application that extracts drums, bass, vocals, and other instruments from MP3 files or Spotify tracks using AI models (Demucs). The project is currently in early planning/setup phase.
+This is a Python music stem separation application that extracts drums, bass, vocals, and other instruments from MP3 files or Spotify tracks using AI models (Demucs). The core pipeline (input handling, Demucs separation, stem enhancement, output organization) and CLI are implemented, with a pytest test suite.
 
 ## Development Commands
 

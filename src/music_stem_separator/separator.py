@@ -18,17 +18,27 @@ class StemSeparator:
 
     SUPPORTED_FORMATS = [".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg"]
     STEM_NAMES = ["drums", "bass", "vocals", "other"]
+    # Default ceiling for a single Demucs run. Generous enough for CPU runs of a
+    # full song, but bounded so a hung subprocess can't block forever.
+    DEFAULT_TIMEOUT_SECONDS = 1800
 
-    def __init__(self, model_name: str = "htdemucs", device: Optional[str] = None):
+    def __init__(
+        self,
+        model_name: str = "htdemucs",
+        device: Optional[str] = None,
+        timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    ):
         """
         Initialize the stem separator.
 
         Args:
             model_name: Demucs model to use (default: htdemucs)
             device: Device to run on ('cpu', 'cuda', or None for auto-detect)
+            timeout: Max seconds to allow the Demucs subprocess to run
         """
         self.model_name = model_name
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.timeout = timeout
         self.supported_formats = self.SUPPORTED_FORMATS
 
         logger.info(
@@ -94,13 +104,27 @@ class StemSeparator:
                 str(audio_file),
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            if result.returncode != 0:
-                raise Exception(f"Demucs separation failed: {result.stderr}")
+            try:
+                result = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=self.timeout
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise RuntimeError(
+                    f"Demucs separation timed out after {self.timeout}s"
+                ) from exc
 
-            # Get the stem file paths
+            if result.returncode != 0:
+                raise RuntimeError(f"Demucs separation failed: {result.stderr}")
+
+            # Discover the stems Demucs actually produced (count/names vary by
+            # model, e.g. htdemucs_6s adds piano/guitar) and confirm they exist.
             track_name = audio_file.stem
-            stem_paths = self.get_stem_paths(output_dir, track_name)
+            stem_paths = self.discover_stems(output_dir, track_name)
+            if not stem_paths:
+                raise RuntimeError(
+                    "Demucs reported success but no stem files were found in "
+                    f"{output_dir / self.model_name / track_name}"
+                )
 
             return {
                 "success": True,
@@ -140,6 +164,33 @@ class StemSeparator:
             stem_paths[stem_name] = stem_file
 
         return stem_paths
+
+    def discover_stems(
+        self, output_dir: Union[str, Path], track_name: str
+    ) -> Dict[str, Path]:
+        """
+        Discover the stem files Demucs actually wrote for a track.
+
+        Unlike get_stem_paths (which predicts the standard 4 stems), this inspects
+        the output directory so models with a different number of stems are handled
+        correctly.
+
+        Args:
+            output_dir: Output directory passed to Demucs
+            track_name: Name of the track (without extension)
+
+        Returns:
+            Dictionary mapping stem names (file stem) to existing file paths
+        """
+        model_output_dir = Path(output_dir) / self.model_name / track_name
+
+        if not model_output_dir.is_dir():
+            return {}
+
+        return {
+            stem_file.stem: stem_file
+            for stem_file in sorted(model_output_dir.glob("*.wav"))
+        }
 
     def verify_stems_exist(self, stem_paths: Dict[str, Path]) -> Dict[str, bool]:
         """

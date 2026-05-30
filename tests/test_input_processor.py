@@ -42,12 +42,11 @@ class TestInputProcessor:
             assert input_type == "spotify_url"
 
     def test_determine_input_type_invalid(self):
-        """Test input type detection for invalid inputs."""
+        """Test input type detection for non-URL, non-file inputs."""
         processor = InputProcessor()
 
         invalid_inputs = [
             "nonexistent_file.mp3",
-            "https://youtube.com/watch?v=abc123",
             "invalid_input",
             "",
         ]
@@ -55,6 +54,16 @@ class TestInputProcessor:
         for invalid_input in invalid_inputs:
             input_type = processor.determine_input_type(invalid_input)
             assert input_type == "invalid"
+
+    def test_determine_input_type_generic_url_routes_to_audio_url(self):
+        """A generic http(s) URL is routed to audio_url; audio-ness is checked
+        later during validation (which may require a network request)."""
+        processor = InputProcessor()
+
+        assert (
+            processor.determine_input_type("https://example.com/watch?v=abc123")
+            == "audio_url"
+        )
 
     def test_validate_local_file_valid(self):
         """Test local file validation for valid files."""
