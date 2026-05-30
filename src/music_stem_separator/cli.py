@@ -1,11 +1,13 @@
 """Command-line interface for the music stem separator."""
 
 import logging
+import shutil
 import sys
 from pathlib import Path
 from typing import Optional
 
 import click
+from dotenv import load_dotenv
 
 from . import __version__
 from .input_processor import InputProcessor
@@ -43,6 +45,13 @@ def setup_logging(verbose: bool = False) -> None:
     "--device", "-d", default=None, help="Device to use (cpu, cuda, or auto-detect)"
 )
 @click.option("--no-enhance", is_flag=True, help="Disable audio enhancement processing")
+@click.option(
+    "--timeout",
+    type=int,
+    default=StemSeparator.DEFAULT_TIMEOUT_SECONDS,
+    show_default=True,
+    help="Max seconds to allow the separation step to run",
+)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.version_option(version=__version__, prog_name="Music Stem Separator")
 def main(
@@ -51,6 +60,7 @@ def main(
     model: str,
     device: Optional[str],
     no_enhance: bool,
+    timeout: int,
     verbose: bool,
 ) -> None:
     """
@@ -71,6 +81,9 @@ def main(
         stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
         stem-separator "https://example.com/audio.mp3"
     """
+    # Load Spotify (and any other) credentials from a local .env file if present.
+    load_dotenv()
+
     setup_logging(verbose)
     logger = logging.getLogger(__name__)
 
@@ -84,6 +97,7 @@ def main(
             model_name=model,
             device=device,
             enable_enhancement=not no_enhance,
+            timeout=timeout,
             verbose=verbose,
         )
 
@@ -122,6 +136,7 @@ def process_track(
     model_name: str = "htdemucs",
     device: Optional[str] = None,
     enable_enhancement: bool = True,
+    timeout: int = StemSeparator.DEFAULT_TIMEOUT_SECONDS,
     verbose: bool = False,
 ) -> dict:
     """
@@ -133,12 +148,20 @@ def process_track(
         model_name: Demucs model name
         device: Device to use for processing
         enable_enhancement: Whether to apply audio enhancement
+        timeout: Max seconds to allow the separation step to run
         verbose: Enable verbose logging
 
     Returns:
         Processing result dictionary
     """
     logger = logging.getLogger(__name__)
+
+    # Intermediate working directories, removed in the finally block below.
+    temp_dirs = [
+        f"{output_dir}/temp",
+        f"{output_dir}/temp_stems",
+        f"{output_dir}/temp_processed",
+    ]
 
     try:
         # Step 1: Process input
@@ -163,7 +186,7 @@ def process_track(
 
         # Step 2: Separate stems
         click.echo(f"🤖 Separating stems using {model_name}...")
-        separator = StemSeparator(model_name=model_name, device=device)
+        separator = StemSeparator(model_name=model_name, device=device, timeout=timeout)
         separation_result = separator.separate_stems(
             audio_file, f"{output_dir}/temp_stems"
         )
@@ -213,6 +236,11 @@ def process_track(
                 "error": f"Output organization failed: {organization_result.get('error', 'Unknown error')}",
             }
 
+        # Point downstream reporting at the final organized files rather than the
+        # soon-to-be-deleted temp copies.
+        if organization_result.get("organized_files"):
+            separation_result["stems"] = organization_result["organized_files"]
+
         # Step 5: Generate metadata and reports
         metadata = output_manager.generate_metadata(
             track_name, separation_result, processing_results
@@ -229,25 +257,16 @@ def process_track(
 
         output_summary = output_manager.get_output_summary(output_structure)
 
-        # Step 6: Cleanup temporary files
-        if verbose:
-            click.echo("🧹 Cleaning up temporary files...")
-
-        temp_files = []
-        if input_result.get("temp_file"):
-            temp_files.append(audio_file)
-
-        if temp_files:
-            output_manager.cleanup_temp_files(temp_files)
-
         return {
             "success": True,
             "track_name": track_name,
             "input_type": input_type,
             "stems_separated": list(separation_result["stems"].keys()),
-            "enhancement_applied": enable_enhancement
-            and processing_results
-            and processing_results["success"],
+            "enhancement_applied": bool(
+                enable_enhancement
+                and processing_results
+                and processing_results["success"]
+            ),
             "output_structure": output_structure,
             "metadata_saved": metadata_result["success"] if metadata_result else False,
             "summary_report": summary_report,
@@ -257,6 +276,14 @@ def process_track(
     except Exception as e:
         logger.error(f"Processing failed: {e}")
         return {"success": False, "error": str(e)}
+
+    finally:
+        # Always remove intermediate working directories (downloaded input,
+        # raw stems, enhanced stems), regardless of success or failure.
+        if verbose:
+            click.echo("🧹 Cleaning up temporary files...")
+        for temp_dir in temp_dirs:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

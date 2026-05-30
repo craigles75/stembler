@@ -8,10 +8,10 @@ AI-powered music stem separation tool that extracts drums, bass, vocals, and oth
 
 ## ✨ Features
 
-- **🎯 4-Stem Separation**: Extract drums, bass, vocals, and other instruments
-- **📱 Dual Input Support**: Process local audio files or Spotify tracks
+- **🎯 Stem Separation**: Extract drums, bass, vocals, and other instruments (6-stem models such as `htdemucs_6s` are supported too)
+- **📱 Flexible Input**: Process local audio files, Spotify tracks, or direct audio URLs
 - **🤖 Multiple AI Models**: Support for various Demucs models for optimal results
-- **🎛️ Audio Enhancement**: Optional post-processing for improved quality
+- **🎛️ Audio Enhancement**: Optional post-processing for improved quality (bass/drums are left unbrightened)
 - **📁 Smart Output Organization**: Automatically organizes stems with metadata
 - **⚡ High Performance**: GPU acceleration support for faster processing
 - **🔧 CLI Interface**: Simple command-line usage for automation and scripting
@@ -46,28 +46,38 @@ To use Spotify track downloading, you need Spotify API credentials:
 
 📖 **Detailed setup instructions**: See [SETUP.md](SETUP.md)
 
+> **Note on Spotify reliability:** Spotify itself doesn't host audio, so spotdl
+> matches each track to a source (YouTube Music / YouTube) and downloads it with
+> `yt-dlp`. If you hit a `YT-DLP download error`, update yt-dlp
+> (`uv lock --upgrade-package yt-dlp && uv sync`) — YouTube changes its player
+> often and an outdated yt-dlp is the usual cause. You can change the source
+> providers with the `STEMBLER_AUDIO_PROVIDERS` env var (comma-separated, e.g.
+> `STEMBLER_AUDIO_PROVIDERS=youtube-music,youtube`).
+
 ### Basic Usage
 
 ```bash
 # Separate a local MP3 file
 uv run stem-separator song.mp3
 
-# Process a Spotify track (3 options for loading .env variables):
+# Process a Spotify track.
+# A .env file in the project root is loaded automatically:
+uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
 
-# Option 1: Use uv's --env-file flag (cleanest)
-uv run --env-file .env stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
-
-# Option 2: Source the .env file first
-source .env && uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
-
-# Option 3: Inline environment variables
+# Alternatively, pass the credentials explicitly with inline env vars:
 SPOTIFY_CLIENT_ID=xxx SPOTIFY_CLIENT_SECRET=yyy uv run stem-separator "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"
+
+# Process a direct audio URL
+uv run stem-separator "https://example.com/audio.mp3"
 
 # Use a specific model with custom output directory
 uv run stem-separator song.mp3 --model htdemucs_ft --output ./my_stems
 
 # Disable audio enhancement for faster processing
 uv run stem-separator song.mp3 --no-enhance
+
+# Cap the separation step at 10 minutes
+uv run stem-separator song.mp3 --timeout 600
 
 # Enable verbose output
 uv run stem-separator song.mp3 --verbose
@@ -93,6 +103,7 @@ Options:
   -m, --model TEXT      Demucs model to use (default: htdemucs)
   -d, --device TEXT     Device to use (cpu, cuda, or auto-detect)
   --no-enhance          Disable audio enhancement processing
+  --timeout INTEGER     Max seconds for the separation step (default: 1800)
   -v, --verbose         Enable verbose output
   --version             Show version and exit
   --help                Show help message
@@ -100,17 +111,20 @@ Options:
 
 ### Supported Input Formats
 
-- **Local Files**: MP3, WAV, FLAC, M4A, and other common audio formats ✅
+- **Local Files**: MP3, WAV, FLAC, M4A, AAC, OGG ✅
 - **Spotify URLs**: Direct track links and URIs ✅
   - `https://open.spotify.com/track/...`
   - `spotify:track:...`
+- **Direct Audio URLs**: `https://.../audio.mp3` ✅
+  (only public hosts are allowed; private/loopback addresses are blocked)
 
 ### Available Models
 
-- `htdemucs` (default) - High-quality general purpose model
-- `htdemucs_ft` - Fine-tuned version for better quality
+- `htdemucs` (default) - High-quality general purpose model (4 stems)
+- `htdemucs_ft` - Fine-tuned version for better quality (4 stems)
+- `htdemucs_6s` - 6-stem model (adds piano and guitar)
+- `hdemucs_mmi` - Hybrid Demucs trained on the MMI dataset
 - `mdx_extra` - Alternative model with different characteristics
-- `mdx_q` - Quantized model for faster processing
 
 ### Output Structure
 
@@ -141,7 +155,7 @@ git clone https://github.com/craigles75/stembler.git
 cd stembler
 
 # Install development dependencies
-uv sync --dev
+uv sync --extra dev
 
 # Run tests
 uv run pytest
@@ -166,6 +180,7 @@ stembler/
 │   ├── input_processor.py  # Input validation & routing
 │   ├── separator.py        # Core Demucs wrapper
 │   ├── spotify_handler.py  # Spotify download functionality
+│   ├── url_downloader.py   # Direct audio URL downloads (with SSRF guard)
 │   ├── stem_processor.py   # Audio enhancement
 │   └── output_manager.py   # File organization
 ├── tests/                  # Test suite
@@ -176,7 +191,7 @@ stembler/
 
 ## 🧪 Testing
 
-The project uses pytest for testing with comprehensive coverage:
+The project uses pytest for testing (currently ~65% coverage):
 
 ```bash
 # Run all tests
@@ -195,10 +210,13 @@ uv run pytest --cov=src/music_stem_separator --cov-report=html
 - `demucs` - AI stem separation engine
 - `librosa` - Audio processing and analysis
 - `spotdl` - Spotify track downloading
+- `yt-dlp` - Media downloader used by spotdl (kept current for YouTube changes)
 - `click` - Command-line interface framework
 - `torch` & `torchaudio` - PyTorch for ML models
 - `numpy` & `scipy` - Numerical computing
 - `soundfile` - Audio file I/O
+- `requests` - Direct audio URL downloads
+- `python-dotenv` - Loads Spotify credentials from `.env`
 
 ### Development Dependencies
 - `pytest` - Testing framework
@@ -219,7 +237,7 @@ uv run pytest --cov=src/music_stem_separator --cov-report=html
 - **Processing Time**: 1-3 minutes per song (depending on model and hardware)
 - **GPU Acceleration**: Significantly faster with CUDA-compatible GPU
 - **Memory Usage**: ~2-4GB RAM for typical songs
-- **Output Quality**: High-fidelity 24-bit WAV files
+- **Output Quality**: High-fidelity 32-bit float WAV files
 
 ## 🤝 Contributing
 

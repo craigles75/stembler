@@ -1,12 +1,15 @@
 """Input validation and routing for local files and Spotify URLs."""
 
 import os
-import re
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from .spotify_handler import SpotifyHandler
+from .spotify_handler import (
+    SpotifyHandler,
+    extract_track_id as extract_spotify_track_id,
+    is_spotify_url,
+)
 from .url_downloader import URLDownloader
 
 
@@ -55,11 +58,7 @@ class InputProcessor:
 
     def _is_spotify_url(self, input_str: str) -> bool:
         """Check if input is a Spotify URL."""
-        spotify_patterns = [
-            r"https://open\.spotify\.com/track/[a-zA-Z0-9]+",
-            r"spotify:track:[a-zA-Z0-9]+",
-        ]
-        return any(re.match(pattern, input_str.strip()) for pattern in spotify_patterns)
+        return is_spotify_url(input_str)
 
     def _is_local_file(self, input_str: str) -> bool:
         """Check if input is a local file path."""
@@ -73,6 +72,7 @@ class InputProcessor:
         """Check if input is a URL."""
         try:
             from urllib.parse import urlparse
+
             result = urlparse(input_str)
             return all([result.scheme, result.netloc])
         except Exception:
@@ -171,12 +171,18 @@ class InputProcessor:
 
             # Check if it's an audio URL
             if not self.url_downloader.is_audio_url(url):
-                return {"valid": False, "error": "URL does not appear to be an audio file"}
+                return {
+                    "valid": False,
+                    "error": "URL does not appear to be an audio file",
+                }
 
             # Get file info
             file_info = self.url_downloader.get_file_info(url)
             if not file_info["valid"]:
-                return {"valid": False, "error": f"Could not access URL: {file_info.get('error', 'Unknown error')}"}
+                return {
+                    "valid": False,
+                    "error": f"Could not access URL: {file_info.get('error', 'Unknown error')}",
+                }
 
             return {
                 "valid": True,
@@ -191,16 +197,7 @@ class InputProcessor:
 
     def _extract_spotify_track_id(self, url: str) -> Optional[str]:
         """Extract track ID from Spotify URL."""
-        # Handle Spotify URI format
-        if url.startswith("spotify:track:"):
-            return url.split(":")[-1]
-
-        # Handle HTTP URL format
-        track_id_match = re.search(r"/track/([a-zA-Z0-9]+)", url)
-        if track_id_match:
-            return track_id_match.group(1)
-
-        return None
+        return extract_spotify_track_id(url)
 
     def process_input(self, input_path: str, temp_dir: Optional[str] = None) -> Dict:
         """
@@ -351,6 +348,6 @@ class InputProcessor:
         """
         if self.spotify_handler:
             self.spotify_handler.cleanup_temp_files(file_paths)
-        
+
         if self.url_downloader:
             self.url_downloader.cleanup_temp_files(file_paths)
